@@ -1,11 +1,10 @@
-// screens/HomeScreen.tsx
-
 import { Picker } from "@react-native-picker/picker";
 import { router } from "expo-router";
 
 import React, { useEffect, useMemo, useState } from "react";
 
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Linking,
@@ -21,8 +20,6 @@ import {
 import API from "../services/api";
 
 export default function HomeScreen() {
-  const [trackingId, setTrackingId] = useState("");
-
   const [customerName, setCustomerName] = useState("");
 
   const [address, setAddress] = useState("");
@@ -40,6 +37,8 @@ export default function HomeScreen() {
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
 
   const [productModalVisible, setProductModalVisible] = useState(false);
+
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchSellers();
@@ -97,6 +96,7 @@ export default function HomeScreen() {
       {
         product: product._id,
         productName: product.productName,
+        uom: product.uom,
         rate: product.rate,
         quantity: "1",
       },
@@ -123,6 +123,20 @@ export default function HomeScreen() {
     setSelectedProducts(updated);
   };
 
+  const resetForm = () => {
+    setCustomerName("");
+
+    setAddress("");
+
+    setPhone("");
+
+    setSeller("");
+
+    setSelectedProducts([]);
+
+    setProductSearch("");
+  };
+
   // TOTAL AMOUNT
 
   const totalAmount = selectedProducts.reduce((sum, item) => {
@@ -137,10 +151,6 @@ export default function HomeScreen() {
         return Alert.alert("Validation", "Customer name is required");
       }
 
-      if (!phone) {
-        return Alert.alert("Validation", "Phone number is required");
-      }
-
       if (!seller) {
         return Alert.alert("Validation", "Please select seller");
       }
@@ -149,16 +159,21 @@ export default function HomeScreen() {
         return Alert.alert("Validation", "Please select products");
       }
 
+      setSubmitting(true);
+
       const payload = {
         customerName,
         address,
         phone,
         seller,
 
-        products: selectedProducts.map((item) => ({
-          product: item.product,
+        detail: selectedProducts.map((item) => ({
+          productName: item.productName,
+          uom: item.uom,
           quantity: Number(item.quantity),
         })),
+        totalAmount: totalAmount,
+        status: "submitted",
       };
 
       await API.post("/orders", payload);
@@ -177,21 +192,12 @@ export default function HomeScreen() {
 
       setSelectedProducts([]);
     } catch (error: any) {
-      console.log(error?.response?.data || error);
-
-      Alert.alert("Error", "Failed to submit order");
-    }
-  };
-
-  // TRACK ORDER
-
-  const trackOrder = async () => {
-    try {
-      const response = await API.get(`/orders/${trackingId}`);
-
-      Alert.alert("Order Found", JSON.stringify(response.data.data));
-    } catch (error) {
-      Alert.alert("Error", "Order not found");
+      Alert.alert(
+        "Error",
+        error?.response?.data || error || "Failed to submit order",
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -242,7 +248,7 @@ export default function HomeScreen() {
             <Picker.Item
               key={item._id}
               label={item.fullName}
-              value={item._id}
+              value={item.fullName}
             />
           ))}
         </Picker>
@@ -301,24 +307,33 @@ export default function HomeScreen() {
 
       {/* SUBMIT */}
 
-      <TouchableOpacity style={styles.button} onPress={submitOrder}>
-        <Text style={styles.buttonText}>Submit Order</Text>
-      </TouchableOpacity>
+      <View style={styles.actionContainer}>
+        {/* SUBMIT BUTTON */}
 
-      {/* TRACK ORDER */}
+        <TouchableOpacity
+          style={[
+            styles.button,
+            styles.submitButton,
+            submitting && {
+              opacity: 0.7,
+            },
+          ]}
+          onPress={submitOrder}
+          disabled={submitting}
+        >
+          {submitting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Submit Order</Text>
+          )}
+        </TouchableOpacity>
 
-      <Text style={styles.heading}>Track Order</Text>
+        {/* RESET BUTTON */}
 
-      <TextInput
-        placeholder="Enter Order ID"
-        style={styles.input}
-        value={trackingId}
-        onChangeText={setTrackingId}
-      />
-
-      <TouchableOpacity style={styles.button} onPress={trackOrder}>
-        <Text style={styles.buttonText}>Track Order</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.resetButton} onPress={resetForm}>
+          <Text style={styles.buttonText}>Reset</Text>
+        </TouchableOpacity>
+      </View>
 
       <TouchableOpacity
         style={styles.secondaryButton}
@@ -404,6 +419,28 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     marginTop: 5,
     textAlign: "center",
+  },
+
+  actionContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 10,
+  },
+
+  submitButton: {
+    flex: 1,
+  },
+
+  resetButton: {
+    backgroundColor: "#6c757d",
+    height: 50,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginBottom: 15,
+
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   heading: {
