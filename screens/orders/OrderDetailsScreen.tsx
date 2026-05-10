@@ -1,11 +1,13 @@
 import React from "react";
 
-import { View, Text, StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
+
+import AppHeader from "../../components/common/AppHeader";
 
 export default function OrderDetailsScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Order Details Screen</Text>
+      <AppHeader title="Order Details" />
     </View>
   );
 }

@@ -14,6 +14,8 @@ import { router } from "expo-router";
 
 import AppInput from "../../components/common/AppInput";
 
+import AppHeader from "../../components/common/AppHeader";
+
 import AppButton from "../../components/common/AppButton";
 
 import Loader from "../../components/common/Loader";
@@ -193,7 +195,7 @@ export default function UserManagementScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
-        <Text style={styles.heading}>User Management</Text>
+        <AppHeader title="User Management" />
       </View>
       <AppInput
         placeholder="Search users..."

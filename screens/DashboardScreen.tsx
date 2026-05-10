@@ -43,6 +43,10 @@ export default function DashboardScreen() {
             />
             <MenuButton title="Print Orders" />
             <MenuButton
+              title="Product Management"
+              onPress={() => router.push("/products")}
+            />
+            <MenuButton
               title="User Management"
               onPress={() => router.push("/users")}
             />

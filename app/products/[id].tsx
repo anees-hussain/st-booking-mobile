@@ -1,13 +1,13 @@
+// app/products/[id].tsx
+
 import React from "react";
 
 import { View, Text, StyleSheet } from "react-native";
 
-import AppHeader from "../../components/common/AppHeader";
-
-export default function OrdersListScreen() {
+export default function ProductDetailsPage() {
   return (
     <View style={styles.container}>
-      <AppHeader title="Orders" />
+      <Text style={styles.text}>Product Details Screen</Text>
     </View>
   );
 }
@@ -17,10 +17,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#fff",
   },
 
   text: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "bold",
   },
 });
