@@ -1,5 +1,4 @@
 import { Picker } from "@react-native-picker/picker";
-import { router } from "expo-router";
 
 import React, { useEffect, useMemo, useState } from "react";
 
@@ -7,7 +6,6 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -17,9 +15,19 @@ import {
   View,
 } from "react-native";
 
-import API from "../services/api";
+import API from "../../services/api";
 
-export default function HomeScreen() {
+interface Props {
+  visible: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+export default function CreateOrderModal({
+  visible,
+  onClose,
+  onSuccess,
+}: Props) {
   const [customerName, setCustomerName] = useState("");
 
   const [address, setAddress] = useState("");
@@ -181,6 +189,14 @@ export default function HomeScreen() {
 
       Alert.alert("Success", "Order submitted successfully");
 
+      // REFRESH ORDERS SCREEN
+
+      onSuccess();
+
+      // CLOSE MODAL
+
+      onClose();
+
       // RESET
 
       setCustomerName("");
@@ -202,206 +218,195 @@ export default function HomeScreen() {
     }
   };
 
-  const handleContactUs = () => {
-    Linking.openURL("tel:+923087387998");
-  };
-
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.mainHeading}>Shoaib Traders</Text>
+    <>
+      <Modal visible={visible} animationType="slide">
+        <ScrollView style={styles.container}>
 
-      {/* CUSTOMER DETAILS */}
+          {/* CUSTOMER DETAILS */}
 
-      <Text style={styles.heading}>Book Order</Text>
-
-      <TextInput
-        placeholder="Customer Name"
-        style={styles.input}
-        value={customerName}
-        onChangeText={setCustomerName}
-      />
-
-      <TextInput
-        placeholder="Address"
-        style={styles.input}
-        value={address}
-        onChangeText={setAddress}
-      />
-
-      <TextInput
-        placeholder="Phone"
-        style={styles.input}
-        keyboardType="phone-pad"
-        value={phone}
-        onChangeText={setPhone}
-      />
-
-      {/* SELLER */}
-
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={seller}
-          onValueChange={(itemValue) => setSeller(itemValue)}
-        >
-          <Picker.Item label="Select Seller" value="" />
-
-          {sellers.map((item) => (
-            <Picker.Item
-              key={item._id}
-              label={item.fullName}
-              value={item.fullName}
-            />
-          ))}
-        </Picker>
-      </View>
-
-      {/* PRODUCT SEARCH */}
-
-      <Text style={styles.heading}>Products</Text>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => setProductModalVisible(true)}
-      >
-        <Text style={styles.buttonText}>+ Add Product</Text>
-      </TouchableOpacity>
-
-      {/* SELECTED PRODUCTS */}
-
-      {selectedProducts.length > 0 && (
-        <>
-          <Text style={styles.heading}>Selected Products</Text>
-
-          {selectedProducts.map((item, index) => (
-            <View key={index} style={styles.selectedProductCard}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.productName}>{item.productName}</Text>
-
-                <Text>Rate: Rs. {item.rate}</Text>
-              </View>
-
-              <TextInput
-                value={item.quantity}
-                onChangeText={(value) => updateQuantity(index, value)}
-                keyboardType="numeric"
-                style={styles.quantityInput}
-              />
-
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => removeProduct(index)}
-              >
-                <Text style={styles.buttonText}>X</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-
-          {/* TOTAL */}
-
-          <View style={styles.totalContainer}>
-            <Text style={styles.totalText}>Total Amount</Text>
-
-            <Text style={styles.totalAmount}>Rs. {totalAmount}</Text>
-          </View>
-        </>
-      )}
-
-      {/* SUBMIT */}
-
-      <View style={styles.actionContainer}>
-        {/* SUBMIT BUTTON */}
-
-        <TouchableOpacity
-          style={[
-            styles.button,
-            styles.submitButton,
-            submitting && {
-              opacity: 0.7,
-            },
-          ]}
-          onPress={submitOrder}
-          disabled={submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Submit Order</Text>
-          )}
-        </TouchableOpacity>
-
-        {/* RESET BUTTON */}
-
-        <TouchableOpacity style={styles.resetButton} onPress={resetForm}>
-          <Text style={styles.buttonText}>Reset</Text>
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity
-        style={styles.secondaryButton}
-        onPress={handleContactUs}
-      >
-        <Text style={styles.buttonText}>Contact Us</Text>
-      </TouchableOpacity>
-
-      {/* LOGIN */}
-
-      <TouchableOpacity
-        style={styles.loginButton}
-        onPress={() => router.push("/login")}
-      >
-        <Text style={styles.loginText}>Registered User? Login</Text>
-      </TouchableOpacity>
-
-      <View style={{ height: 40 }} />
-      <Modal visible={productModalVisible} animationType="slide">
-        <View style={styles.modalContainer}>
-          <Text style={styles.heading}>Select Product</Text>
-
-          {/* SEARCH */}
+          <Text style={styles.heading}>Book Order</Text>
 
           <TextInput
-            placeholder="Search Product"
+            placeholder="Customer Name"
             style={styles.input}
-            value={productSearch}
-            onChangeText={setProductSearch}
+            value={customerName}
+            onChangeText={setCustomerName}
           />
 
-          {/* PRODUCTS */}
-
-          <FlatList
-            data={filteredProducts}
-            keyExtractor={(item) => item._id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.productCard}
-                onPress={() => {
-                  addToOrder(item);
-
-                  setProductModalVisible(false);
-                }}
-              >
-                <View>
-                  <Text style={styles.productName}>{item.productName}</Text>
-
-                  <Text style={styles.productInfo}>UOM: {item.uom}</Text>
-
-                  <Text style={styles.productInfo}>Rate: Rs. {item.rate}</Text>
-                </View>
-              </TouchableOpacity>
-            )}
+          <TextInput
+            placeholder="Address"
+            style={styles.input}
+            value={address}
+            onChangeText={setAddress}
           />
 
-          {/* CLOSE */}
+          <TextInput
+            placeholder="Phone"
+            style={styles.input}
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
+          />
+
+          {/* SELLER */}
+
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={seller}
+              onValueChange={(itemValue) => setSeller(itemValue)}
+            >
+              <Picker.Item label="Select Seller" value="" />
+
+              {sellers.map((item) => (
+                <Picker.Item
+                  key={item._id}
+                  label={item.fullName}
+                  value={item.fullName}
+                />
+              ))}
+            </Picker>
+          </View>
+
+          {/* PRODUCT SEARCH */}
+
+          <Text style={styles.heading}>Products</Text>
 
           <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => setProductModalVisible(false)}
+            style={styles.button}
+            onPress={() => setProductModalVisible(true)}
           >
+            <Text style={styles.buttonText}>+ Add Product</Text>
+          </TouchableOpacity>
+
+          {/* SELECTED PRODUCTS */}
+
+          {selectedProducts.length > 0 && (
+            <>
+              <Text style={styles.heading}>Selected Products</Text>
+
+              {selectedProducts.map((item, index) => (
+                <View key={index} style={styles.selectedProductCard}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.productName}>{item.productName}</Text>
+
+                    <Text>Rate: Rs. {item.rate}</Text>
+                  </View>
+
+                  <TextInput
+                    value={item.quantity}
+                    onChangeText={(value) => updateQuantity(index, value)}
+                    keyboardType="numeric"
+                    style={styles.quantityInput}
+                  />
+
+                  <TouchableOpacity
+                    style={styles.removeButton}
+                    onPress={() => removeProduct(index)}
+                  >
+                    <Text style={styles.buttonText}>X</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+
+              {/* TOTAL */}
+
+              <View style={styles.totalContainer}>
+                <Text style={styles.totalText}>Total Amount</Text>
+
+                <Text style={styles.totalAmount}>Rs. {totalAmount}</Text>
+              </View>
+            </>
+          )}
+
+          {/* SUBMIT */}
+
+          <View style={styles.actionContainer}>
+            {/* SUBMIT BUTTON */}
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.submitButton,
+                submitting && {
+                  opacity: 0.7,
+                },
+              ]}
+              onPress={submitOrder}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Submit Order</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* RESET BUTTON */}
+
+            <TouchableOpacity style={styles.resetButton} onPress={resetForm}>
+              <Text style={styles.buttonText}>Reset</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ height: 40 }} />
+          <Modal visible={productModalVisible} animationType="slide">
+            <View style={styles.modalContainer}>
+              <Text style={styles.heading}>Select Product</Text>
+
+              {/* SEARCH */}
+
+              <TextInput
+                placeholder="Search Product"
+                style={styles.input}
+                value={productSearch}
+                onChangeText={setProductSearch}
+              />
+
+              {/* PRODUCTS */}
+
+              <FlatList
+                data={filteredProducts}
+                keyExtractor={(item) => item._id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.productCard}
+                    onPress={() => {
+                      addToOrder(item);
+
+                      setProductModalVisible(false);
+                    }}
+                  >
+                    <View>
+                      <Text style={styles.productName}>{item.productName}</Text>
+
+                      <Text style={styles.productInfo}>UOM: {item.uom}</Text>
+
+                      <Text style={styles.productInfo}>
+                        Rate: Rs. {item.rate}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+              />
+
+              {/* CLOSE */}
+
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={() => setProductModalVisible(false)}
+              >
+                <Text style={styles.buttonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </Modal>
+
+          <TouchableOpacity style={styles.secondaryButton} onPress={onClose}>
             <Text style={styles.buttonText}>Close</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </Modal>
-    </ScrollView>
+    </>
   );
 }
 

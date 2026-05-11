@@ -36,11 +36,11 @@ export default function DashboardScreen() {
       case "controller":
         return (
           <>
-            <MenuButton title="View Orders" />
             <MenuButton
-              title="Orders Summary"
+              title="View Orders"
               onPress={() => router.push("/orders")}
             />
+            <MenuButton title="Orders Summary" />
             <MenuButton title="Print Orders" />
             <MenuButton
               title="Product Management"
@@ -69,9 +69,15 @@ export default function DashboardScreen() {
       case "seller":
         return (
           <>
-            <MenuButton title="Update Orders" />
-            <MenuButton title="Summary By Product" />
-            <MenuButton title="Summary By Customer" />
+            <MenuButton
+              title="View Orders"
+              onPress={() => router.push("/orders")}
+            />
+
+            <MenuButton
+              title="Orders Summary"
+              onPress={() => router.push("/orders/summary")}
+            />
           </>
         );
 
