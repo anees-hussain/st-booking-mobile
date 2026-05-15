@@ -21,12 +21,14 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  user: any;
 }
 
 export default function CreateOrderModal({
   visible,
   onClose,
   onSuccess,
+  user,
 }: Props) {
   const [customerName, setCustomerName] = useState("");
 
@@ -176,6 +178,7 @@ export default function CreateOrderModal({
         seller,
 
         detail: selectedProducts.map((item) => ({
+          productId: item.product,
           productName: item.productName,
           uom: item.uom,
           quantity: Number(item.quantity),
@@ -183,6 +186,7 @@ export default function CreateOrderModal({
         })),
         totalAmount: totalAmount,
         status: "submitted",
+        postedBy: user.username,
       };
 
       await API.post("/orders", payload);
@@ -211,7 +215,9 @@ export default function CreateOrderModal({
     } catch (error: any) {
       Alert.alert(
         "Error",
-        error?.response?.data || error || "Failed to submit order",
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to submit order",
       );
     } finally {
       setSubmitting(false);
@@ -222,7 +228,6 @@ export default function CreateOrderModal({
     <>
       <Modal visible={visible} animationType="slide">
         <ScrollView style={styles.container}>
-
           {/* CUSTOMER DETAILS */}
 
           <Text style={styles.heading}>Book Order</Text>
@@ -291,6 +296,23 @@ export default function CreateOrderModal({
                     <Text style={styles.productName}>{item.productName}</Text>
 
                     <Text>Rate: Rs. {item.rate}</Text>
+                    {user.designation === "producer" || user.designation === "controller" && <View style={styles.inputGroup}>
+                      <Text style={styles.label}>Rate</Text>
+
+                      <TextInput
+                        style={styles.input}
+                        keyboardType="numeric"
+                        value={String(item.rate || "")}
+                        onChangeText={(text) => {
+                          const updatedProducts = [...selectedProducts];
+
+                          updatedProducts[index].rate = Number(text) || 0;
+
+                          setSelectedProducts(updatedProducts);
+                        }}
+                        placeholder="Enter Rate"
+                      />
+                    </View>}
                   </View>
 
                   <TextInput
@@ -588,5 +610,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     padding: 20,
+  },
+
+  inputGroup: {
+    marginTop: 10,
+  },
+
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 6,
   },
 });

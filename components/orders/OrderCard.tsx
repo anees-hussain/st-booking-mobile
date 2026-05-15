@@ -1,83 +1,244 @@
-import React from "react";
+import React, { useState } from "react";
 
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Pressable
+} from "react-native";
 
 interface Props {
   order: any;
   onUpdate: () => void;
+  onDeliver?: () => void;
+  onCancel?: () => void;
+  user: any;
+  onPayment?: () => void;
 }
 
-export default function OrderCard({ order, onUpdate }: Props) {
+export default function OrderCard({
+  user,
+  order,
+  onUpdate,
+  onDeliver,
+  onCancel,
+  onPayment,
+}: Props) {
+  const [modalVisible, setModalVisible] = useState(false);
+
   return (
-    <View style={styles.card}>
-      {/* HEADER */}
+    <>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        style={styles.card}
+        onPress={() => setModalVisible(true)}
+      >
+        {/* HEADER */}
 
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.customerName}>{order.customerName}</Text>
+        <View style={styles.header}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.customerName}>{order.customerName}</Text>
 
-          <Text style={styles.orderDate}>
-            {order.createdAt
-              ? new Date(order.createdAt).toLocaleDateString()
-              : "N/A"}
-          </Text>
+            <Text style={styles.orderDate}>
+              {order.createdAt
+                ? new Date(order.createdAt).toLocaleDateString()
+                : "N/A"}
+            </Text>
+          </View>
+
+          {/* STATUS */}
+
+          <View
+            style={[
+              styles.statusBadge,
+              {
+                backgroundColor:
+                  order.status === "submitted"
+                    ? "#22c55e"
+                    : order.status === "delivered"
+                      ? "#f59e0b"
+                      : order.status === "cancelled"
+                        ? "#ef4444"
+                        : "#3b82f6",
+              },
+            ]}
+          >
+            <Text style={styles.statusText}>{order.status}</Text>
+          </View>
         </View>
 
-        {/* STATUS */}
+        {/* BODY */}
 
-        <View
-          style={[
-            styles.statusBadge,
-            {
-              backgroundColor:
-                order.status === "submitted"
-                  ? "#22c55e"
-                  : order.status === "delivered"
-                    ? "#f59e0b"
-                    : order.status === "cancelled"
-                      ? "#ef4444"
-                      : "#3b82f6",
-            },
-          ]}
-        >
-          <Text style={styles.statusText}>{order.status}</Text>
-        </View>
-      </View>
+        <View style={styles.infoContainer}>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Address</Text>
 
-      {/* BODY */}
+            <Text style={styles.value}>{order.address || "N/A"}</Text>
+          </View>
 
-      <View style={styles.infoContainer}>
-        <View style={styles.infoRow}>
-          <Text style={styles.label}>Address</Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Phone</Text>
 
-          <Text style={styles.value}>{order.address || "N/A"}</Text>
-        </View>
+            <Text style={styles.value}>{order.phone}</Text>
+          </View>
 
-        <View style={styles.infoRow}>
-          <Text style={styles.label}>Phone</Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Seller</Text>
 
-          <Text style={styles.value}>{order.phone}</Text>
-        </View>
+            <Text style={styles.value}>{order.seller || "N/A"}</Text>
+          </View>
 
-        <View style={styles.infoRow}>
-          <Text style={styles.label}>Seller</Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Delivered By</Text>
 
-          <Text style={styles.value}>{order.seller || "N/A"}</Text>
+            <Text style={styles.value}>{order.deliveryBy || "N/A"}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Posted By</Text>
+
+            <Text style={styles.value}>{order.postedBy || "N/A"}</Text>
+          </View>
+
+          <View style={styles.totalBox}>
+            <Text style={styles.totalLabel}>Total Amount</Text>
+
+            <Text style={styles.totalAmount}>Rs. {order.totalAmount || 0}</Text>
+          </View>
         </View>
 
-        <View style={styles.totalBox}>
-          <Text style={styles.totalLabel}>Total Amount</Text>
+        {/* BUTTON */}
 
-          <Text style={styles.totalAmount}>Rs. {order.totalAmount || 0}</Text>
+        <View style={styles.buttonView}>
+          {/* CANCELLED */}
+
+          {order.status === "cancelled" && (
+            <>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={onCancel}
+                disabled
+              >
+                <Text style={styles.buttonText}>Cancelled</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          {/* DELIVERED */}
+
+          {order.status === "delivered" && (
+            <>
+              <TouchableOpacity
+                style={styles.deliverButton}
+                onPress={onDeliver}
+                disabled
+              >
+                <Text style={styles.buttonText}>Delivered</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              {user.designation === "manager" || user.designation === "controller" ? (
+                <TouchableOpacity
+                  style={styles.paidButton}
+                  onPress={onPayment}
+                >
+                  <Text style={styles.buttonText}>Paid</Text>
+                </TouchableOpacity>
+              ) : null}
+            </>
+          )}
+
+          {/* SUBMITTED */}
+
+          {order.status === "submitted" && (
+            <>
+              <TouchableOpacity style={styles.updateButton} onPress={onUpdate}>
+                <Text style={styles.buttonText}>Update</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.deliverButton}
+                onPress={onDeliver}
+              >
+                <Text style={styles.buttonText}>Delivered</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
-      </View>
-
-      {/* BUTTON */}
-
-      <TouchableOpacity style={styles.button} onPress={onUpdate}>
-        <Text style={styles.buttonText}>Update Order</Text>
       </TouchableOpacity>
-    </View>
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            {/* HEADER */}
+
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Product Details</Text>
+
+              <Pressable onPress={() => setModalVisible(false)}>
+                <Text style={styles.closeText}>Close</Text>
+              </Pressable>
+            </View>
+
+            {/* PRODUCTS */}
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {order.detail?.length > 0 ? (
+                order.detail.map((item: any, index: number) => (
+                  <View key={index} style={styles.productCard}>
+                    <Text style={styles.productName}>
+                      {item.productName || "N/A"}
+                    </Text>
+
+                    <View style={styles.productRow}>
+                      <Text style={styles.productLabel}>Quantity</Text>
+
+                      <Text style={styles.productValue}>
+                        {item.quantity || 0}
+                      </Text>
+                    </View>
+
+                    <View style={styles.productRow}>
+                      <Text style={styles.productLabel}>Rate</Text>
+
+                      <Text style={styles.productValue}>
+                        Rs. {item.rate || 0}
+                      </Text>
+                    </View>
+
+                    <View style={styles.productRow}>
+                      <Text style={styles.productLabel}>UOM</Text>
+
+                      <Text style={styles.productValue}>
+                        {item.uom || "N/A"}
+                      </Text>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <Text style={{ textAlign: "center", marginTop: 20 }}>
+                  No products found
+                </Text>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -201,12 +362,68 @@ const styles = StyleSheet.create({
     color: "#16a34a",
   },
 
-  button: {
+  buttonView: {
+    flexDirection: "row",
+
+    justifyContent: "space-between",
+  },
+
+  updateButton: {
     marginTop: 18,
 
     backgroundColor: "#2563eb",
 
     height: 52,
+
+    width: "30%",
+
+    borderRadius: 14,
+
+    justifyContent: "center",
+
+    alignItems: "center",
+  },
+
+  deliverButton: {
+    marginTop: 18,
+
+    backgroundColor: "#9d10b9",
+
+    height: 52,
+
+    width: "30%",
+
+    borderRadius: 14,
+
+    justifyContent: "center",
+
+    alignItems: "center",
+  },
+
+  cancelButton: {
+    marginTop: 18,
+
+    backgroundColor: "#dc2626",
+
+    height: 52,
+
+    width: "30%",
+
+    borderRadius: 14,
+
+    justifyContent: "center",
+
+    alignItems: "center",
+  },
+
+  paidButton: {
+    marginTop: 18,
+
+    backgroundColor: "#10b981",
+
+    height: 52,
+
+    width: "30%",
 
     borderRadius: 14,
 
@@ -239,5 +456,70 @@ const styles = StyleSheet.create({
     fontWeight: "700",
 
     textTransform: "capitalize",
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+
+  modalContainer: {
+    width: "100%",
+    maxHeight: "80%",
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+  },
+
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+  },
+
+  closeText: {
+    color: "#ef4444",
+    fontWeight: "600",
+  },
+
+  productCard: {
+    backgroundColor: "#f9fafb",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+  },
+
+  productName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 10,
+  },
+
+  productRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+
+  productLabel: {
+    fontSize: 14,
+    color: "#6b7280",
+  },
+
+  productValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#111827",
   },
 });

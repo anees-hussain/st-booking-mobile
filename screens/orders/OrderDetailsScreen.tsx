@@ -8,16 +8,18 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  Modal
 } from "react-native";
 
 import AppHeader from "../../components/common/AppHeader";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import API from "../../services/api";
 
@@ -28,6 +30,8 @@ export default function OrderDetailsScreen() {
 
   const [loading, setLoading] = useState(false);
 
+  const [user, setUser] = useState<any>(null);
+
   const [updating, setUpdating] = useState(false);
 
   const [customerName, setCustomerName] = useState("");
@@ -37,8 +41,6 @@ export default function OrderDetailsScreen() {
   const [phone, setPhone] = useState("");
 
   const [seller, setSeller] = useState("");
-
-  const [status, setStatus] = useState("");
 
   const [sellers, setSellers] = useState<any[]>([]);
 
@@ -53,12 +55,26 @@ export default function OrderDetailsScreen() {
   // FETCH ORDER DETAILS
 
   useEffect(() => {
+    setupLoggedInUser();
+
     fetchOrder();
 
     fetchSellers();
 
     fetchProducts();
   }, []);
+
+  const setupLoggedInUser = async () => {
+    try {
+      const storedUser = await AsyncStorage.getItem("user");
+
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   // FILTER PRODUCTS
 
@@ -76,8 +92,6 @@ export default function OrderDetailsScreen() {
 
       const response = await API.get(`/orders/${id}`);
 
-      console.log(response.data);
-
       const order = response.data;
 
       setCustomerName(order.customerName || "");
@@ -88,11 +102,10 @@ export default function OrderDetailsScreen() {
 
       setSeller(order.seller || "");
 
-      setStatus(order.status || "");
-
       // PRODUCTS
 
       const formattedProducts = order.detail.map((item: any) => ({
+        product: item.productId,
         productName: item.productName,
         quantity: String(item.quantity),
         rate: item.rate || 0,
@@ -154,6 +167,7 @@ export default function OrderDetailsScreen() {
         productName: product.productName,
         quantity: "1",
         rate: product.rate,
+        uom: product.uom || "",
       },
     ]);
   };
@@ -211,13 +225,18 @@ export default function OrderDetailsScreen() {
         address,
         phone,
         seller,
-        status,
+        totalAmount,
 
-        products: selectedProducts.map((item) => ({
-          product: item.product,
+        detail: selectedProducts.map((item) => ({
+          productId: item.product,
+          productName: item.productName,
           quantity: Number(item.quantity),
+          rate: item.rate,
+          uom: item.uom || "",
         })),
       };
+
+      console.log("Payload: ", payload);
 
       await API.put(`/orders/${id}`, payload);
 
@@ -306,23 +325,6 @@ export default function OrderDetailsScreen() {
             </Picker>
           </View>
 
-          {/* STATUS */}
-
-          <Text style={styles.label}>Status</Text>
-
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={status}
-              onValueChange={(value) => setStatus(value)}
-            >
-              <Picker.Item label="Submitted" value="submitted" />
-
-              <Picker.Item label="Delivered" value="delivered" />
-
-              <Picker.Item label="Cancelled" value="cancelled" />
-            </Picker>
-          </View>
-
           <Text style={styles.label}>Products</Text>
 
           <TouchableOpacity
@@ -346,6 +348,26 @@ export default function OrderDetailsScreen() {
                 <Text style={styles.productName}>{item.productName}</Text>
 
                 <Text>Rs. {item.rate}</Text>
+                {user.designation === "producer" ||
+                  (user.designation === "controller" && (
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>Rate</Text>
+
+                      <TextInput
+                        style={styles.input}
+                        keyboardType="numeric"
+                        value={String(item.rate || "")}
+                        onChangeText={(text) => {
+                          const updatedProducts = [...selectedProducts];
+
+                          updatedProducts[index].rate = Number(text) || 0;
+
+                          setSelectedProducts(updatedProducts);
+                        }}
+                        placeholder="Enter Rate"
+                      />
+                    </View>
+                  ))}
               </View>
 
               <TextInput
@@ -616,5 +638,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
 
     marginTop: 10,
+  },
+
+  inputGroup: {
+    marginTop: 10,
+  },
+
+  editableInputlabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 6,
   },
 });

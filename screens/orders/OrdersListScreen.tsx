@@ -1,8 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
+  Modal,
   StyleSheet,
   Text,
   TextInput,
@@ -27,6 +29,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 export default function OrdersListScreen() {
   const router = useRouter();
 
+  const [user, setUser] = useState<any>(null);
+
   const [orders, setOrders] = useState<any[]>([]);
 
   const [orderModalVisible, setOrderModalVisible] = useState(false);
@@ -47,6 +51,8 @@ export default function OrdersListScreen() {
 
   const [selectedDate, setSelectedDate] = useState("");
 
+  const [selectedDeliveryBy, setSelectedDeliveryBy] = useState("");
+
   const [refreshing, setRefreshing] = useState(false);
 
   const [page, setPage] = useState(1);
@@ -55,50 +61,41 @@ export default function OrdersListScreen() {
 
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const filteredOrders = useMemo(() => {
-    let data = [...orders];
+  const [deliveryModal, setDeliveryModal] = useState(false);
 
-    // SEARCH
+  const [deliveryBy, setDeliveryBy] = useState("");
 
-    if (search) {
-      data = data.filter(
-        (item) =>
-          item.customerName?.toLowerCase().includes(search.toLowerCase()) ||
-          item.phone?.includes(search),
-      );
-    }
+  const deliveryOptions = ["asad", "hamza"];
 
-    // SELLER FILTER
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
-    if (selectedSeller) {
-      data = data.filter((item) => item.seller === selectedSeller);
-    }
-
-    // STATUS FILTER
-
-    if (selectedStatus) {
-      data = data.filter((item) => item.status === selectedStatus);
-    }
-
-    // DATE FILTER
-
-    if (selectedDate) {
-      data = data.filter((item) =>
-        item.createdAt?.slice(0, 10).includes(selectedDate),
-      );
-    }
-
-    return data;
-  }, [orders, search, selectedSeller, selectedStatus, selectedDate]);
+  const [pendingStatus, setPendingStatus] = useState("");
 
   useEffect(() => {
+    setPage(1);
 
+    setOrders([]);
+
+    fetchOrders(1, false);
+  }, [
+    selectedSeller,
+    selectedStatus,
+    selectedDeliveryBy,
+    selectedDate,
+    search,
+  ]);
+
+  useEffect(() => {
     setupLoggedInUser();
-
-    fetchOrders();
 
     fetchSellers();
   }, []);
+
+  useEffect(() => {
+    if (user?.designation === "seller") {
+      setSelectedSeller(user.fullName);
+    }
+  }, [user]);
 
   const fetchSellers = async () => {
     try {
@@ -112,59 +109,107 @@ export default function OrdersListScreen() {
 
   const setupLoggedInUser = async () => {
     try {
-      const userData = await AsyncStorage.getItem("user");
+      const storedUser = await AsyncStorage.getItem("user");
 
-      if (!userData) return;
-
-      const parsedUser = JSON.parse(userData);
-
-      // AUTO FILTER FOR SELLER
-
-      if (parsedUser.designation === "seller") {
-        setSelectedSeller(parsedUser.fullName);
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
       }
+
+      console.log("Logged in user:", JSON.parse(storedUser || "{}"));
     } catch (error) {
       console.log(error);
     }
   };
 
-  // FETCH ORDERS
-
   const fetchOrders = async (pageNumber = 1, isLoadMore = false) => {
     try {
+      //
+      // PREVENT MULTIPLE API CALLS
+      //
+
+      if (loading || loadingMore || (isLoadMore && !hasMore)) {
+        return;
+      }
+
+      //
+      // LOADING STATES
+      //
+
       if (isLoadMore) {
         setLoadingMore(true);
       } else {
         setLoading(true);
       }
 
-      const response = await API.get(`/orders?page=${pageNumber}&limit=20`);
+      //
+      // API REQUEST
+      //
 
-      console.log("response", response.data);
+      const response = await API.get("/orders", {
+        params: {
+          page: pageNumber,
+          limit: 20,
 
-      const newOrders = response.data || [];
+          seller: selectedSeller || undefined,
 
-      console.log("newOrders", newOrders);
+          status: selectedStatus || undefined,
 
-      if (isLoadMore) {
-        setOrders((prev) => [...prev, ...newOrders]);
-      } else {
-        setOrders(newOrders);
-      }
+          deliveryBy: selectedDeliveryBy || undefined,
+
+          date: selectedDate || undefined,
+
+          search: search || undefined,
+        },
+      });
+
+      //
+      // RESPONSE DATA
+      //
+
+      const newOrders = response.data?.orders || [];
+
+      const pagination = response.data?.pagination;
+
+      //
+      // UPDATE ORDERS
+      //
+
+      setOrders((prev) => {
+        if (!isLoadMore) {
+          return newOrders;
+        }
+
+        //
+        // REMOVE DUPLICATES
+        //
+
+        const existingIds = new Set(prev.map((item) => item._id));
+
+        const filteredNewOrders = newOrders.filter(
+          (item) => !existingIds.has(item._id),
+        );
+
+        return [...prev, ...filteredNewOrders];
+      });
+
+      //
       // PAGINATION
+      //
 
-      setHasMore(response.data?.pagination?.hasMore || false);
+      setHasMore(pagination?.hasMore || false);
 
       setPage(pageNumber);
     } catch (error) {
-      console.log(error);
+      console.log(
+        "FETCH ORDERS ERROR:",
+        error?.response?.data || error.message,
+      );
     } finally {
       setLoading(false);
 
       setLoadingMore(false);
     }
   };
-
   const handleRefresh = async () => {
     try {
       setRefreshing(true);
@@ -178,9 +223,109 @@ export default function OrdersListScreen() {
   };
 
   const handleLoadMore = async () => {
-    if (!hasMore || loadingMore) return;
+    if (!loadingMore && hasMore) {
+      fetchOrders(page + 1, true);
+    }
+  };
 
-    await fetchOrders(page + 1, true);
+  const updateOrderStatus = async (
+    order: any,
+    status: string,
+    selectedDeliveryBy = "",
+  ) => {
+    //
+    // ACTION TEXT
+    //
+
+    let actionText = "update";
+
+    if (status === "delivered") {
+      actionText = "deliver";
+    } else if (status === "cancelled") {
+      actionText = "cancel";
+    } else if (status === "paid") {
+      actionText = "mark as paid";
+    }
+
+    //
+    // CONFIRM ALERT
+    //
+
+    Alert.alert(
+      "Confirm Action",
+      `Are you sure you want to ${actionText} this order?`,
+      [
+        {
+          text: "No",
+          style: "cancel",
+        },
+
+        {
+          text: "Yes",
+
+          onPress: async () => {
+            try {
+              //
+              // REQUEST BODY
+              //
+
+              const body: any = {
+                status,
+              };
+
+              //
+              // DELIVERY PERSON
+              //
+
+              if (status === "delivered") {
+                body.deliveryBy = selectedDeliveryBy;
+              }
+
+              //
+              // API CALL
+              //
+
+              const response = await API.put(
+                `/orders/${order._id}/status`,
+                body,
+              );
+
+              console.log(response.data);
+
+              //
+              // SUCCESS MESSAGE
+              //
+
+              Alert.alert("Success", `Order marked as ${status}`);
+
+              //
+              // CLOSE MODAL
+              //
+
+              setDeliveryModal(false);
+
+              //
+              // REFRESH ORDERS
+              //
+
+              fetchOrders(1, false);
+            } catch (error) {
+              console.log(error);
+
+              Alert.alert("Error", "Something went wrong");
+            } finally {
+              //
+              // RESET STATES
+              //
+
+              setDeliveryBy("");
+
+              setSelectedOrder(null);
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -208,7 +353,7 @@ export default function OrdersListScreen() {
       {/* LIST */}
 
       <FlatList
-        data={filteredOrders}
+        data={orders}
         keyExtractor={(item) => item._id}
         contentContainerStyle={{
           paddingBottom: 120,
@@ -218,10 +363,25 @@ export default function OrdersListScreen() {
         refreshing={refreshing}
         onRefresh={handleRefresh}
         showsVerticalScrollIndicator={false}
+        onEndReached={handleLoadMore}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews
         renderItem={({ item }) => (
           <OrderCard
+            user={user}
             order={item}
             onUpdate={() => router.push(`/orders/${item._id}`)}
+            onDeliver={() => {
+              setSelectedOrder(item);
+
+              setPendingStatus("delivered");
+
+              setDeliveryModal(true);
+            }}
+            onCancel={() => updateOrderStatus(item, "cancelled")}
+            onPayment={() => updateOrderStatus(item, "paid")}
           />
         )}
         ListFooterComponent={
@@ -237,6 +397,13 @@ export default function OrdersListScreen() {
                 <Text style={styles.loadMoreText}>Load More</Text>
               )}
             </TouchableOpacity>
+          ) : null
+        }
+        ListEmptyComponent={
+          !loading ? (
+            <Text style={{ textAlign: "center", marginTop: 40 }}>
+              No orders found
+            </Text>
           ) : null
         }
       />
@@ -262,13 +429,56 @@ export default function OrdersListScreen() {
         setSelectedStatus={setSelectedStatus}
         selectedDate={selectedDate}
         setSelectedDate={setSelectedDate}
+        selectedDeliveryBy={selectedDeliveryBy}
+        setSelectedDeliveryBy={setSelectedDeliveryBy}
       />
 
       <CreateOrderModal
+        user={user}
         visible={orderModalVisible}
         onClose={() => setOrderModalVisible(false)}
         onSuccess={fetchOrders}
       />
+
+      <Modal visible={deliveryModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Delivery By</Text>
+
+            {deliveryOptions.map((item) => (
+              <TouchableOpacity
+                key={item}
+                style={[
+                  styles.optionButton,
+                  deliveryBy === item && styles.selectedOption,
+                ]}
+                onPress={async () => {
+                  setDeliveryBy(item);
+
+                  await updateOrderStatus(selectedOrder, pendingStatus, item);
+                }}
+              >
+                <Text>{item}</Text>
+              </TouchableOpacity>
+            ))}
+
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => {
+                setDeliveryModal(false);
+
+                setSelectedOrder(null);
+
+                setPendingStatus("");
+
+                setDeliveryBy("");
+              }}
+            >
+              <Text style={styles.buttonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -353,5 +563,78 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
 
     fontSize: 16,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalContent: {
+    backgroundColor: "#fff",
+
+    width: "85%",
+
+    borderRadius: 14,
+
+    padding: 20,
+  },
+
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+
+    marginBottom: 20,
+  },
+
+  optionButton: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+
+    borderRadius: 10,
+
+    padding: 14,
+
+    marginBottom: 12,
+  },
+
+  selectedOption: {
+    backgroundColor: "#dbeafe",
+
+    borderColor: "#2563eb",
+  },
+
+  confirmButton: {
+    backgroundColor: "#16a34a",
+
+    height: 50,
+
+    borderRadius: 10,
+
+    justifyContent: "center",
+    alignItems: "center",
+
+    marginTop: 10,
+  },
+
+  closeButton: {
+    backgroundColor: "#dc2626",
+
+    height: 50,
+
+    borderRadius: 10,
+
+    justifyContent: "center",
+    alignItems: "center",
+
+    marginTop: 12,
+  },
+
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
 });

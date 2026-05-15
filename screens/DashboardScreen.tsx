@@ -40,7 +40,10 @@ export default function DashboardScreen() {
               title="View Orders"
               onPress={() => router.push("/orders")}
             />
-            <MenuButton title="Orders Summary" />
+            <MenuButton
+              title="Orders Summary"
+              onPress={() => router.push("/orders/summary")}
+            />
             <MenuButton title="Print Orders" />
             <MenuButton
               title="Product Management"
@@ -58,7 +61,7 @@ export default function DashboardScreen() {
           <>
             <MenuButton
               title="Orders Summary"
-              onPress={() => router.push("/orders/index")}
+              onPress={() => router.push("/orders/summary")}
             />
             <MenuButton title="Print Orders" />
             <MenuButton title="Orders By Customer" />

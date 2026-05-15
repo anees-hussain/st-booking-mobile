@@ -168,6 +168,7 @@ export default function HomeScreen() {
         seller,
 
         detail: selectedProducts.map((item) => ({
+          productId: item.product,
           productName: item.productName,
           uom: item.uom,
           quantity: Number(item.quantity),
@@ -175,7 +176,10 @@ export default function HomeScreen() {
         })),
         totalAmount: totalAmount,
         status: "submitted",
+        postedBy: "guest",
       };
+
+      console.log("Submitting Order:", payload);
 
       await API.post("/orders", payload);
 
@@ -195,7 +199,9 @@ export default function HomeScreen() {
     } catch (error: any) {
       Alert.alert(
         "Error",
-        error?.response?.data || error || "Failed to submit order",
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to submit order",
       );
     } finally {
       setSubmitting(false);

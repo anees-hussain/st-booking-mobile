@@ -42,7 +42,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>User Login</Text>
+      <Text style={styles.heading}>Internal Login</Text>
 
       <TextInput
         placeholder="Username"
