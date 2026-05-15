@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "st-booking-mobile",
-    "slug": "st-booking-mobile",
+    "name": "Shoaib Traders",
+    "slug": "shoaib-traders",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "stbookingmobile",
+    "scheme": "shoaibtraders",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -18,6 +18,7 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "package": "com.shoaibtraders.app",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
@@ -44,6 +45,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "03e5a47e-c5a0-47b5-aba9-68f3c6cd4d1b"
+      }
     }
   }
 }
