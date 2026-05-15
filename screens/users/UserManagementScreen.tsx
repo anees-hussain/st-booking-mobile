@@ -123,7 +123,6 @@ export default function UserManagementScreen() {
 
       fetchUsers();
     } catch (error) {
-      console.log(error);
 
       Alert.alert("Error", "Operation failed");
     }
@@ -172,7 +171,6 @@ export default function UserManagementScreen() {
 
       setNewPassword("");
     } catch (error: any) {
-      console.log("PASSWORD ERROR:", error?.response?.data || error);
 
       Alert.alert(
         "Error",

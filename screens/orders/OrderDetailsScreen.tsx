@@ -114,8 +114,6 @@ export default function OrderDetailsScreen() {
 
       setSelectedProducts(formattedProducts);
     } catch (error) {
-      console.log(error);
-
       Alert.alert("Error", "Failed to fetch order");
     } finally {
       setLoading(false);
@@ -128,9 +126,6 @@ export default function OrderDetailsScreen() {
     try {
       const response = await API.get("/users/sellers");
 
-      console.log(response.data);
-
-      // setSellers(response.data.map((user: any) => user.fullName) || []);
       setSellers(response.data || []);
     } catch (error) {
       console.log(error);
@@ -236,15 +231,12 @@ export default function OrderDetailsScreen() {
         })),
       };
 
-      console.log("Payload: ", payload);
-
       await API.put(`/orders/${id}`, payload);
 
       Alert.alert("Success", "Order updated successfully");
 
       router.back();
     } catch (error: any) {
-      console.log(error?.response?.data || error);
 
       Alert.alert("Error", "Failed to update order");
     } finally {

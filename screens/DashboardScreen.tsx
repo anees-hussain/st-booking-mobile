@@ -44,7 +44,10 @@ export default function DashboardScreen() {
               title="Orders Summary"
               onPress={() => router.push("/orders/summary")}
             />
-            <MenuButton title="Print Orders" />
+            <MenuButton
+              title="Order Sheet"
+              onPress={() => router.push("/orders/ordersheet")}
+            />
             <MenuButton
               title="Product Management"
               onPress={() => router.push("/products")}
@@ -60,12 +63,21 @@ export default function DashboardScreen() {
         return (
           <>
             <MenuButton
+              title="View Orders"
+              onPress={() => router.push("/orders")}
+            />
+            <MenuButton
               title="Orders Summary"
               onPress={() => router.push("/orders/summary")}
             />
-            <MenuButton title="Print Orders" />
-            <MenuButton title="Orders By Customer" />
-            <MenuButton title="Update Orders" />
+            <MenuButton
+              title="Order Sheet"
+              onPress={() => router.push("/orders/ordersheet")}
+            />
+            <MenuButton
+              title="Product Management"
+              onPress={() => router.push("/products")}
+            />
           </>
         );
 
@@ -81,20 +93,33 @@ export default function DashboardScreen() {
               title="Orders Summary"
               onPress={() => router.push("/orders/summary")}
             />
+
+            <MenuButton
+              title="Order Sheet"
+              onPress={() => router.push("/orders/ordersheet")}
+            />
           </>
         );
 
       case "producer":
         return (
           <>
-            <MenuButton title="Summary By Product" />
+            <MenuButton
+              title="View Orders"
+              onPress={() => router.push("/orders")}
+            />
             <MenuButton
               title="Orders Summary"
-              onPress={() => router.push("/orders/index")}
+              onPress={() => router.push("/orders/summary")}
             />
-            <MenuButton title="Submitted Orders" />
-            <MenuButton title="Delivered Orders" />
-            <MenuButton title="Cancelled Orders" />
+            <MenuButton
+              title="Order Sheet"
+              onPress={() => router.push("/orders/ordersheet")}
+            />
+            <MenuButton
+              title="Product Management"
+              onPress={() => router.push("/products")}
+            />
           </>
         );
 

@@ -155,6 +155,10 @@ export default function HomeScreen() {
         return Alert.alert("Validation", "Please select seller");
       }
 
+      if (!phone) {
+        return Alert.alert("Validation", "Please enter phone number");
+      }
+
       if (selectedProducts.length === 0) {
         return Alert.alert("Validation", "Please select products");
       }
@@ -178,8 +182,6 @@ export default function HomeScreen() {
         status: "submitted",
         postedBy: "guest",
       };
-
-      console.log("Submitting Order:", payload);
 
       await API.post("/orders", payload);
 

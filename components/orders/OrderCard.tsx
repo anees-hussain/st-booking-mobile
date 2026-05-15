@@ -1,13 +1,16 @@
 import React, { useState } from "react";
 
+import * as Print from "expo-print";
+
 import {
+  Alert,
   Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  Pressable
 } from "react-native";
 
 interface Props {
@@ -28,6 +31,162 @@ export default function OrderCard({
   onPayment,
 }: Props) {
   const [modalVisible, setModalVisible] = useState(false);
+
+  const printInvoice = async () => {
+    try {
+      const html = generateInvoiceHTML(order);
+
+      await Print.printAsync({
+        html,
+      });
+    } catch (error) {
+      Alert.alert("Error", "Could not print invoice");
+    }
+  };
+
+  const generateInvoiceHTML = (order: any) => {
+    const items = order.detail
+      ?.map(
+        (item: any) => `
+      <tr>
+        <td class="item-name">${item.productName}</td>
+        <td>${item.quantity}</td>
+        <td>${item.rate}</td>
+        <td>${item.quantity * item.rate}</td>
+      </tr>
+    `,
+      )
+      .join("");
+
+    return `
+  <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+      <style>
+        @page {
+          margin: 0;
+          size: 80mm auto;
+        }
+
+        * {
+          box-sizing: border-box;
+        }
+
+        html, body {
+          width: 80mm;
+          margin: 0;
+          padding: 0;
+          font-family: monospace;
+          color: #000;
+          background: #fff;
+        }
+
+        body {
+          padding: 6px;
+        }
+
+        .center {
+          text-align: center;
+        }
+
+        h2 {
+          margin: 0;
+          font-size: 20px;
+        }
+
+        p {
+          margin: 2px 0;
+          font-size: 12px;
+        }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 6px;
+        }
+
+        th, td {
+          padding: 3px 0;
+          font-size: 11px;
+          text-align: left;
+          vertical-align: top;
+          word-break: break-word;
+        }
+
+        .item-name {
+          width: 40%;
+        }
+
+        .line {
+          border-top: 1px dashed #000;
+          margin: 6px 0;
+        }
+
+        .total {
+          font-size: 16px;
+          font-weight: bold;
+        }
+
+        .footer {
+          margin-top: 10px;
+          text-align: center;
+          font-size: 12px;
+        }
+      </style>
+    </head>
+
+    <body>
+
+      <div class="center">
+        <h2>SHOAIB TRADERS</h2>
+        <p>Customer Invoice</p>
+      </div>
+
+      <div class="line"></div>
+
+      <p><strong>Name:</strong> ${order.customerName || ""}</p>
+      <p><strong>Phone:</strong> ${order.phone || ""}</p>
+      <p><strong>Address:</strong> ${order.address || ""}</p>
+
+      <div class="line"></div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Rate</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${items}
+        </tbody>
+      </table>
+
+      <div class="line"></div>
+
+      <p class="total">
+        Total: Rs. ${order.totalAmount || 0}
+      </p>
+
+      <div class="line"></div>
+
+      <div class="footer">
+        Thank You
+      </div>
+
+      </br>
+      <p style="font-size: 12px; text-align: center;">
+        Contact: +92 308 7387998
+      </p>
+
+    </body>
+  </html>
+  `;
+  };
 
   return (
     <>
@@ -112,6 +271,10 @@ export default function OrderCard({
 
         {/* BUTTON */}
 
+        <TouchableOpacity style={styles.printButton} onPress={printInvoice}>
+          <Text style={styles.buttonText}>Print</Text>
+        </TouchableOpacity>
+
         <View style={styles.buttonView}>
           {/* CANCELLED */}
 
@@ -143,11 +306,9 @@ export default function OrderCard({
                 <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>
 
-              {user.designation === "manager" || user.designation === "controller" ? (
-                <TouchableOpacity
-                  style={styles.paidButton}
-                  onPress={onPayment}
-                >
+              {user.designation === "manager" ||
+              user.designation === "controller" ? (
+                <TouchableOpacity style={styles.paidButton} onPress={onPayment}>
                   <Text style={styles.buttonText}>Paid</Text>
                 </TouchableOpacity>
               ) : null}
@@ -521,5 +682,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#111827",
+  },
+
+  printButton: {
+    backgroundColor: "#111827",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 90,
   },
 });

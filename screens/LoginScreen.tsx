@@ -27,8 +27,6 @@ export default function LoginScreen() {
 
       const response = await API.post("/users/login", payload);
 
-      console.log(response.data);
-
       await AsyncStorage.setItem("token", response.data.token);
       await AsyncStorage.setItem("user", JSON.stringify(response.data));
 
