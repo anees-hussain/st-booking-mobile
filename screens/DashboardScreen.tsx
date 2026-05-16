@@ -41,6 +41,10 @@ export default function DashboardScreen() {
               onPress={() => router.push("/orders")}
             />
             <MenuButton
+              title="Paid Orders Details"
+              onPress={() => router.push("/orders/paidSummary")}
+            />
+            <MenuButton
               title="Orders Summary"
               onPress={() => router.push("/orders/summary")}
             />
@@ -65,6 +69,10 @@ export default function DashboardScreen() {
             <MenuButton
               title="View Orders"
               onPress={() => router.push("/orders")}
+            />
+            <MenuButton
+              title="Paid Orders Details"
+              onPress={() => router.push("/orders/paidSummary")}
             />
             <MenuButton
               title="Orders Summary"
