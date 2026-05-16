@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import {
   Alert,
   StyleSheet,
+  ActivityIndicator,
   Text,
   TextInput,
   TouchableOpacity,
@@ -13,13 +14,16 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { router } from "expo-router";
 import API from "../services/api";
-
+//loader
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const loginUser = async () => {
     try {
+      setLoading(true);
+
       const payload = {
         username,
         password,
@@ -35,6 +39,8 @@ export default function LoginScreen() {
       console.log(error?.response?.data || error);
 
       Alert.alert("Error", "Invalid credentials");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -58,8 +64,21 @@ export default function LoginScreen() {
         onChangeText={setPassword}
       />
 
-      <TouchableOpacity style={styles.button} onPress={loginUser}>
-        <Text style={styles.buttonText}>Login</Text>
+      <TouchableOpacity
+        style={[
+          styles.button,
+          loading && {
+            opacity: 0.7,
+          },
+        ]}
+        onPress={loginUser}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Login</Text>
+        )}
       </TouchableOpacity>
     </View>
   );

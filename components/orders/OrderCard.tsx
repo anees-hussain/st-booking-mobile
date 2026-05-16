@@ -262,6 +262,26 @@ export default function OrderCard({
             <Text style={styles.value}>{order.postedBy || "N/A"}</Text>
           </View>
 
+          {order.status === "paid" && (
+            <>
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Paid to</Text>
+
+                <Text style={styles.value}>{order.acknowledgeBy || "N/A"}</Text>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Paid At</Text>
+
+                <Text style={styles.value}>
+                  {order.acknowledgeAt
+                    ? new Date(order.acknowledgeAt).toLocaleDateString()
+                    : "N/A"}
+                </Text>
+              </View>
+            </>
+          )}
+
           <View style={styles.totalBox}>
             <Text style={styles.totalLabel}>Total Amount</Text>
 
