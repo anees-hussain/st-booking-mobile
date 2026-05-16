@@ -192,50 +192,78 @@ export default function OrderCard({
   // `;
   // };
 
-  const generateInvoiceText = (order: any) => {
-    const items = order.detail
-      ?.map(
-        (item: any) =>
-          `• ${item.productName}
-${item.quantity} x ${item.rate} = ${item.quantity * item.rate}`,
-      )
-      .join("\n\n");
+const centerText = (text: string, width = 32) => {
+  const spaces = Math.max(0, Math.floor((width - text.length) / 2));
 
-    return `
-================================
-        SHOAIB TRADERS
-================================
+  return " ".repeat(spaces) + text;
+};
 
-Customer Invoice
+const line = (char = "-") => {
+  return char.repeat(32);
+};
 
-Name:
-${order.customerName || ""}
+const row = (left: string, right: string, width = 32) => {
+  const spaces = Math.max(1, width - left.length - right.length);
 
-Phone:
-${order.phone || ""}
+  return left + " ".repeat(spaces) + right;
+};
 
-Address:
-${order.address || ""}
+const productRow = (name: string, qty: number, rate: number, total: number) => {
+  const shortName = name.length > 14 ? name.substring(0, 14) : name;
 
---------------------------------
-
-${items}
-
---------------------------------
-
-TOTAL: Rs. ${order.totalAmount || 0}
-
---------------------------------
-
-Thank You
-
-Contact:
-0308-7387998
-
-
-
+  return `
+${shortName.padEnd(14)}
+${String(qty).padStart(3)}
+${String(rate).padStart(7)}
+${String(total).padStart(8)}
 `;
-  };
+};
+
+const generateInvoiceText = (order: any) => {
+  const products = order.detail
+    ?.map((item: any) =>
+      productRow(
+        item.productName,
+        item.quantity,
+        item.rate,
+        item.quantity * item.rate,
+      ),
+    )
+    .join("\n");
+
+  return `
+
+${line("=")}
+${centerText("SHOAIB TRADERS")}
+${centerText("Customer Invoice")}
+${line("=")}
+
+Name: ${order.customerName || ""}
+Phone: ${order.phone || ""}
+Address: ${order.address || ""}
+
+${line("-")}
+
+Item            Qty   Rate   Total
+
+${products}
+
+${line("-")}
+
+${row("Total:", `Rs. ${order.totalAmount || 0}`)}
+
+${line("-")}
+
+${centerText("Thank You")}
+
+${centerText("0308-7387998")}
+
+
+
+
+\x1D\x56\x41\x10
+`;
+};
 
   const printInvoice = async () => {
     try {
