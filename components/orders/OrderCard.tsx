@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 
-import * as Print from "expo-print";
+import TcpSocket from "react-native-tcp-socket";
+
+// import * as Print from "expo-print";
+
+import { PRINTER_IP, PRINTER_PORT } from "../../config/printer";
 
 import {
   Alert,
@@ -32,160 +36,238 @@ export default function OrderCard({
 }: Props) {
   const [modalVisible, setModalVisible] = useState(false);
 
-  const printInvoice = async () => {
-    try {
-      const html = generateInvoiceHTML(order);
+  // const printInvoice = async () => {
+  //   try {
+  //     const html = generateInvoiceHTML(order);
 
-      await Print.printAsync({
-        html,
-      });
-    } catch (error) {
-      Alert.alert("Error", "Could not print invoice");
-    }
-  };
+  //     await Print.printAsync({
+  //       html,
+  //     });
+  //   } catch (error) {
+  //     Alert.alert("Error", "Could not print invoice");
+  //   }
+  // };
 
-  const generateInvoiceHTML = (order: any) => {
+  // const generateInvoiceHTML = (order: any) => {
+  //   const items = order.detail
+  //     ?.map(
+  //       (item: any) => `
+  //     <tr>
+  //       <td class="item-name">${item.productName}</td>
+  //       <td>${item.quantity}</td>
+  //       <td>${item.rate}</td>
+  //       <td>${item.quantity * item.rate}</td>
+  //     </tr>
+  //   `,
+  //     )
+  //     .join("");
+
+  //   return `
+  // <html>
+  //   <head>
+  //     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  //     <style>
+  //       @page {
+  //         margin: 0;
+  //         size: 80mm auto;
+  //       }
+
+  //       * {
+  //         box-sizing: border-box;
+  //       }
+
+  //       html, body {
+  //         width: 80mm;
+  //         margin: 0;
+  //         padding: 0;
+  //         font-family: monospace;
+  //         color: #000;
+  //         background: #fff;
+  //       }
+
+  //       body {
+  //         padding: 6px;
+  //       }
+
+  //       .center {
+  //         text-align: center;
+  //       }
+
+  //       h2 {
+  //         margin: 0;
+  //         font-size: 20px;
+  //       }
+
+  //       p {
+  //         margin: 2px 0;
+  //         font-size: 12px;
+  //       }
+
+  //       table {
+  //         width: 100%;
+  //         border-collapse: collapse;
+  //         margin-top: 6px;
+  //       }
+
+  //       th, td {
+  //         padding: 3px 0;
+  //         font-size: 11px;
+  //         text-align: left;
+  //         vertical-align: top;
+  //         word-break: break-word;
+  //       }
+
+  //       .item-name {
+  //         width: 40%;
+  //       }
+
+  //       .line {
+  //         border-top: 1px dashed #000;
+  //         margin: 6px 0;
+  //       }
+
+  //       .total {
+  //         font-size: 16px;
+  //         font-weight: bold;
+  //       }
+
+  //       .footer {
+  //         margin-top: 10px;
+  //         text-align: center;
+  //         font-size: 12px;
+  //       }
+  //     </style>
+  //   </head>
+
+  //   <body>
+
+  //     <div class="center">
+  //       <h2>SHOAIB TRADERS</h2>
+  //       <p>Customer Invoice</p>
+  //     </div>
+
+  //     <div class="line"></div>
+
+  //     <p><strong>Name:</strong> ${order.customerName || ""}</p>
+  //     <p><strong>Phone:</strong> ${order.phone || ""}</p>
+  //     <p><strong>Address:</strong> ${order.address || ""}</p>
+
+  //     <div class="line"></div>
+
+  //     <table>
+  //       <thead>
+  //         <tr>
+  //           <th>Item</th>
+  //           <th>Qty</th>
+  //           <th>Rate</th>
+  //           <th>Total</th>
+  //         </tr>
+  //       </thead>
+
+  //       <tbody>
+  //         ${items}
+  //       </tbody>
+  //     </table>
+
+  //     <div class="line"></div>
+
+  //     <p class="total">
+  //       Total: Rs. ${order.totalAmount || 0}
+  //     </p>
+
+  //     <div class="line"></div>
+
+  //     <div class="footer">
+  //       Thank You
+  //     </div>
+
+  //     </br>
+  //     <p style="font-size: 12px; text-align: center;">
+  //       Contact: +92 308 7387998
+  //     </p>
+
+  //   </body>
+  // </html>
+  // `;
+  // };
+
+  const generateInvoiceText = (order: any) => {
     const items = order.detail
       ?.map(
-        (item: any) => `
-      <tr>
-        <td class="item-name">${item.productName}</td>
-        <td>${item.quantity}</td>
-        <td>${item.rate}</td>
-        <td>${item.quantity * item.rate}</td>
-      </tr>
-    `,
+        (item: any) =>
+          `• ${item.productName}
+${item.quantity} x ${item.rate} = ${item.quantity * item.rate}`,
       )
-      .join("");
+      .join("\n\n");
 
     return `
-  <html>
-    <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+================================
+        SHOAIB TRADERS
+================================
 
-      <style>
-        @page {
-          margin: 0;
-          size: 80mm auto;
-        }
+Customer Invoice
 
-        * {
-          box-sizing: border-box;
-        }
+Name:
+${order.customerName || ""}
 
-        html, body {
-          width: 80mm;
-          margin: 0;
-          padding: 0;
-          font-family: monospace;
-          color: #000;
-          background: #fff;
-        }
+Phone:
+${order.phone || ""}
 
-        body {
-          padding: 6px;
-        }
+Address:
+${order.address || ""}
 
-        .center {
-          text-align: center;
-        }
+--------------------------------
 
-        h2 {
-          margin: 0;
-          font-size: 20px;
-        }
+${items}
 
-        p {
-          margin: 2px 0;
-          font-size: 12px;
-        }
+--------------------------------
 
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-top: 6px;
-        }
+TOTAL: Rs. ${order.totalAmount || 0}
 
-        th, td {
-          padding: 3px 0;
-          font-size: 11px;
-          text-align: left;
-          vertical-align: top;
-          word-break: break-word;
-        }
+--------------------------------
 
-        .item-name {
-          width: 40%;
-        }
+Thank You
 
-        .line {
-          border-top: 1px dashed #000;
-          margin: 6px 0;
-        }
+Contact:
+0308-7387998
 
-        .total {
-          font-size: 16px;
-          font-weight: bold;
-        }
 
-        .footer {
-          margin-top: 10px;
-          text-align: center;
-          font-size: 12px;
-        }
-      </style>
-    </head>
 
-    <body>
+`;
+  };
 
-      <div class="center">
-        <h2>SHOAIB TRADERS</h2>
-        <p>Customer Invoice</p>
-      </div>
+  const printInvoice = async () => {
+    try {
+      const invoice = generateInvoiceText(order);
 
-      <div class="line"></div>
+      const client = TcpSocket.createConnection(
+        {
+          host: PRINTER_IP,
+          port: PRINTER_PORT,
+        },
 
-      <p><strong>Name:</strong> ${order.customerName || ""}</p>
-      <p><strong>Phone:</strong> ${order.phone || ""}</p>
-      <p><strong>Address:</strong> ${order.address || ""}</p>
+        () => {
+          console.log("PRINTER CONNECTED");
 
-      <div class="line"></div>
+          client.write(invoice);
 
-      <table>
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th>Qty</th>
-            <th>Rate</th>
-            <th>Total</th>
-          </tr>
-        </thead>
+          client.destroy();
 
-        <tbody>
-          ${items}
-        </tbody>
-      </table>
+          Alert.alert("Success", "Invoice Printed");
+        },
+      );
 
-      <div class="line"></div>
+      client.on("error", (error) => {
+        console.log("PRINT ERROR", error);
 
-      <p class="total">
-        Total: Rs. ${order.totalAmount || 0}
-      </p>
+        Alert.alert("Error", "Could not connect to printer");
+      });
+    } catch (error) {
+      console.log(error);
 
-      <div class="line"></div>
-
-      <div class="footer">
-        Thank You
-      </div>
-
-      </br>
-      <p style="font-size: 12px; text-align: center;">
-        Contact: +92 308 7387998
-      </p>
-
-    </body>
-  </html>
-  `;
+      Alert.alert("Error", "Printing failed");
+    }
   };
 
   return (
