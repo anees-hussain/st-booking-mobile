@@ -2,8 +2,6 @@ import React, { useState } from "react";
 
 import TcpSocket from "react-native-tcp-socket";
 
-// import * as Print from "expo-print";
-
 import { PRINTER_IP, PRINTER_PORT } from "../../config/printer";
 
 import {
@@ -36,211 +34,53 @@ export default function OrderCard({
 }: Props) {
   const [modalVisible, setModalVisible] = useState(false);
 
-  // const printInvoice = async () => {
-  //   try {
-  //     const html = generateInvoiceHTML(order);
+  const PRINTER_WIDTH = 32;
 
-  //     await Print.printAsync({
-  //       html,
-  //     });
-  //   } catch (error) {
-  //     Alert.alert("Error", "Could not print invoice");
-  //   }
-  // };
+  const centerText = (text: string) => {
+    const space = Math.max(0, Math.floor((PRINTER_WIDTH - text.length) / 2));
 
-  // const generateInvoiceHTML = (order: any) => {
-  //   const items = order.detail
-  //     ?.map(
-  //       (item: any) => `
-  //     <tr>
-  //       <td class="item-name">${item.productName}</td>
-  //       <td>${item.quantity}</td>
-  //       <td>${item.rate}</td>
-  //       <td>${item.quantity * item.rate}</td>
-  //     </tr>
-  //   `,
-  //     )
-  //     .join("");
+    return " ".repeat(space) + text;
+  };
 
-  //   return `
-  // <html>
-  //   <head>
-  //     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  const line = (char = "-") => {
+    return char.repeat(PRINTER_WIDTH);
+  };
 
-  //     <style>
-  //       @page {
-  //         margin: 0;
-  //         size: 80mm auto;
-  //       }
+  const formatText = (text: string, max = 32) => {
+    if (!text) return "";
 
-  //       * {
-  //         box-sizing: border-box;
-  //       }
+    // remove unsupported unicode chars
+    const cleaned = text.replace(/[^\x20-\x7E]/g, "");
 
-  //       html, body {
-  //         width: 80mm;
-  //         margin: 0;
-  //         padding: 0;
-  //         font-family: monospace;
-  //         color: #000;
-  //         background: #fff;
-  //       }
+    if (cleaned.length <= max) {
+      return cleaned;
+    }
 
-  //       body {
-  //         padding: 6px;
-  //       }
+    return cleaned.substring(0, max - 3) + "...";
+  };
 
-  //       .center {
-  //         text-align: center;
-  //       }
+  const productRow = (
+    name: string,
+    qty: number,
+    rate: number,
+    total: number,
+  ) => {
+    return `${name}\n` + `Qty:${qty}  Rate:${rate}  Total:${total}\n`;
+  };
 
-  //       h2 {
-  //         margin: 0;
-  //         font-size: 20px;
-  //       }
+  const generateInvoiceText = (order: any) => {
+    const products = order.detail
+      ?.map((item: any) =>
+        productRow(
+          item.productName,
+          item.quantity,
+          item.rate,
+          item.quantity * item.rate,
+        ),
+      )
+      .join("\n");
 
-  //       p {
-  //         margin: 2px 0;
-  //         font-size: 12px;
-  //       }
-
-  //       table {
-  //         width: 100%;
-  //         border-collapse: collapse;
-  //         margin-top: 6px;
-  //       }
-
-  //       th, td {
-  //         padding: 3px 0;
-  //         font-size: 11px;
-  //         text-align: left;
-  //         vertical-align: top;
-  //         word-break: break-word;
-  //       }
-
-  //       .item-name {
-  //         width: 40%;
-  //       }
-
-  //       .line {
-  //         border-top: 1px dashed #000;
-  //         margin: 6px 0;
-  //       }
-
-  //       .total {
-  //         font-size: 16px;
-  //         font-weight: bold;
-  //       }
-
-  //       .footer {
-  //         margin-top: 10px;
-  //         text-align: center;
-  //         font-size: 12px;
-  //       }
-  //     </style>
-  //   </head>
-
-  //   <body>
-
-  //     <div class="center">
-  //       <h2>SHOAIB TRADERS</h2>
-  //       <p>Customer Invoice</p>
-  //     </div>
-
-  //     <div class="line"></div>
-
-  //     <p><strong>Name:</strong> ${order.customerName || ""}</p>
-  //     <p><strong>Phone:</strong> ${order.phone || ""}</p>
-  //     <p><strong>Address:</strong> ${order.address || ""}</p>
-
-  //     <div class="line"></div>
-
-  //     <table>
-  //       <thead>
-  //         <tr>
-  //           <th>Item</th>
-  //           <th>Qty</th>
-  //           <th>Rate</th>
-  //           <th>Total</th>
-  //         </tr>
-  //       </thead>
-
-  //       <tbody>
-  //         ${items}
-  //       </tbody>
-  //     </table>
-
-  //     <div class="line"></div>
-
-  //     <p class="total">
-  //       Total: Rs. ${order.totalAmount || 0}
-  //     </p>
-
-  //     <div class="line"></div>
-
-  //     <div class="footer">
-  //       Thank You
-  //     </div>
-
-  //     </br>
-  //     <p style="font-size: 12px; text-align: center;">
-  //       Contact: +92 308 7387998
-  //     </p>
-
-  //   </body>
-  // </html>
-  // `;
-  // };
-
-const PRINTER_WIDTH = 32;
-
-const centerText = (text: string) => {
-  const space = Math.max(0, Math.floor((PRINTER_WIDTH - text.length) / 2));
-
-  return " ".repeat(space) + text;
-};
-
-const line = (char = "-") => {
-  return char.repeat(PRINTER_WIDTH);
-};
-
-const formatText = (text: string, max = 32) => {
-  if (!text) return "";
-
-  // remove unsupported unicode chars
-  const cleaned = text.replace(/[^\x20-\x7E]/g, "");
-
-  if (cleaned.length <= max) {
-    return cleaned;
-  }
-
-  return cleaned.substring(0, max - 3) + "...";
-};
-
-const productRow = (name: string, qty: number, rate: number, total: number) => {
-  const shortName = formatText(name, 14);
-
-  return (
-    shortName.padEnd(14) +
-    String(qty).padStart(4) +
-    String(rate).padStart(7) +
-    String(total).padStart(7)
-  );
-};
-
-const generateInvoiceText = (order: any) => {
-  const products = order.detail
-    ?.map((item: any) =>
-      productRow(
-        item.productName,
-        item.quantity,
-        item.rate,
-        item.quantity * item.rate,
-      ),
-    )
-    .join("\n");
-
-  return `
+    return `
 ${centerText("SHOAIB TRADERS")}
 ${centerText("Customer Invoice")}
 
@@ -257,7 +97,7 @@ ${formatText(order.address || "", 30)}
 
 ${line("-")}
 
-Item           Qty   Rate  Total
+Order Details:
 
 ${products}
 
@@ -274,7 +114,7 @@ ${centerText("0308-7387998")}
 
 \x1D\x56\x41\x10
 `;
-};
+  };
 
   const printInvoice = async () => {
     try {
