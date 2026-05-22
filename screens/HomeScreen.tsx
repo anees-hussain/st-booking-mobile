@@ -80,48 +80,57 @@ export default function HomeScreen() {
     );
   }, [allProducts, productSearch]);
 
-  // ADD PRODUCT TO ORDER
-
-  const addToOrder = (product: any) => {
-    const alreadyExists = selectedProducts.find(
+  const changeProductQuantity = (product: any, change: number) => {
+    const existingIndex = selectedProducts.findIndex(
       (item) => item.product === product._id,
     );
 
-    if (alreadyExists) {
-      return Alert.alert("Already Added", "Product already added");
+    if (existingIndex === -1) {
+      if (change <= 0) return;
+
+      setSelectedProducts((prev) => [
+        ...prev,
+        {
+          product: product._id,
+          productName: product.productName,
+          uom: product.uom,
+          rate: product.rate,
+          quantity: "1",
+        },
+      ]);
+
+      return;
     }
 
-    setSelectedProducts([
-      ...selectedProducts,
-      {
-        product: product._id,
-        productName: product.productName,
-        uom: product.uom,
-        rate: product.rate,
-        quantity: "1",
-      },
-    ]);
-  };
-
-  // UPDATE QUANTITY
-
-  const updateQuantity = (index: number, quantity: string) => {
     const updated = [...selectedProducts];
 
-    updated[index].quantity = quantity;
+    const currentQty = Number(updated[existingIndex].quantity || 0);
+
+    const newQty = currentQty + change;
+
+    if (newQty <= 0) {
+      updated.splice(existingIndex, 1);
+
+      setSelectedProducts(updated);
+
+      return;
+    }
+
+    updated[existingIndex].quantity = String(newQty);
 
     setSelectedProducts(updated);
   };
 
-  // REMOVE PRODUCT
+  const getProductQuantity = (productId: string) => {
+    const item = selectedProducts.find((p) => p.product === productId);
 
-  const removeProduct = (index: number) => {
-    const updated = [...selectedProducts];
-
-    updated.splice(index, 1);
-
-    setSelectedProducts(updated);
+    return Number(item?.quantity || 0);
   };
+
+  const totalItems = selectedProducts.reduce(
+    (sum, item) => sum + Number(item.quantity),
+    0,
+  );
 
   const resetForm = () => {
     setCustomerName("");
@@ -211,7 +220,7 @@ export default function HomeScreen() {
   };
 
   const handleContactUs = () => {
-    Linking.openURL("tel:+923087387998");
+    Linking.openURL("tel:+923006838039");
   };
 
   return (
@@ -277,41 +286,34 @@ export default function HomeScreen() {
       {/* SELECTED PRODUCTS */}
 
       {selectedProducts.length > 0 && (
-        <>
-          <Text style={styles.heading}>Selected Products</Text>
+        <View
+          style={{
+            backgroundColor: "#f5f5f5",
+            padding: 15,
+            borderRadius: 12,
+            marginBottom: 15,
+          }}
+        >
+          <Text
+            style={{
+              fontWeight: "bold",
+              fontSize: 18,
+            }}
+          >
+            Products Selected: {totalItems}
+          </Text>
 
-          {selectedProducts.map((item, index) => (
-            <View key={index} style={styles.selectedProductCard}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.productName}>{item.productName}</Text>
-
-                <Text>Rate: Rs. {item.rate}</Text>
-              </View>
-
-              <TextInput
-                value={item.quantity}
-                onChangeText={(value) => updateQuantity(index, value)}
-                keyboardType="numeric"
-                style={styles.quantityInput}
-              />
-
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => removeProduct(index)}
-              >
-                <Text style={styles.buttonText}>X</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-
-          {/* TOTAL */}
-
-          <View style={styles.totalContainer}>
-            <Text style={styles.totalText}>Total Amount</Text>
-
-            <Text style={styles.totalAmount}>Rs. {totalAmount}</Text>
-          </View>
-        </>
+          <Text
+            style={{
+              marginTop: 5,
+              fontSize: 18,
+              color: "green",
+              fontWeight: "bold",
+            }}
+          >
+            Total Amount: Rs. {totalAmount}
+          </Text>
+        </View>
       )}
 
       {/* SUBMIT */}
@@ -378,26 +380,104 @@ export default function HomeScreen() {
 
           <FlatList
             data={filteredProducts}
+            keyboardShouldPersistTaps="handled"
             keyExtractor={(item) => item._id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.productCard}
-                onPress={() => {
-                  addToOrder(item);
+            contentContainerStyle={{
+              paddingBottom: 120,
+            }}
+            renderItem={({ item }) => {
+              const qty = getProductQuantity(item._id);
 
-                  setProductModalVisible(false);
-                }}
-              >
-                <View>
-                  <Text style={styles.productName}>{item.productName}</Text>
+              return (
+                <View style={styles.productCard}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.productName}>{item.productName}</Text>
 
-                  <Text style={styles.productInfo}>UOM: {item.uom}</Text>
+                    <Text style={styles.productInfo}>UOM: {item.uom}</Text>
 
-                  <Text style={styles.productInfo}>Rate: Rs. {item.rate}</Text>
+                    <Text style={styles.productInfo}>
+                      Rate: Rs. {item.rate}
+                    </Text>
+                  </View>
+
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <TouchableOpacity
+                      style={styles.qtyButton}
+                      onPress={() => changeProductQuantity(item, -1)}
+                    >
+                      <Text style={styles.qtyButtonText}>-</Text>
+                    </TouchableOpacity>
+
+                    <TextInput
+                      value={String(qty)}
+                      keyboardType="numeric"
+                      style={styles.qtyInput}
+                      onChangeText={(text) => {
+                        const numericValue = text.replace(/[^0-9]/g, "");
+
+                        setSelectedProducts((prev) => {
+                          const updated = [...prev];
+
+                          const existingIndex = updated.findIndex(
+                            (p) => p.product === item._id,
+                          );
+
+                          if (existingIndex === -1) {
+                            if (!numericValue || Number(numericValue) <= 0) {
+                              return prev;
+                            }
+
+                            return [
+                              ...prev,
+                              {
+                                product: item._id,
+                                productName: item.productName,
+                                quantity: numericValue,
+                                rate: item.rate,
+                                uom: item.uom,
+                              },
+                            ];
+                          }
+
+                          if (
+                            numericValue === "" ||
+                            Number(numericValue) === 0
+                          ) {
+                            updated.splice(existingIndex, 1);
+
+                            return updated;
+                          }
+
+                          updated[existingIndex].quantity = numericValue;
+
+                          return updated;
+                        });
+                      }}
+                    />
+
+                    <TouchableOpacity
+                      style={styles.qtyButton}
+                      onPress={() => changeProductQuantity(item, 1)}
+                    >
+                      <Text style={styles.qtyButtonText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </TouchableOpacity>
-            )}
+              );
+            }}
           />
+
+          <View style={styles.footerSummary}>
+            <Text style={styles.footerSummaryText}>Items: {totalItems}</Text>
+
+            <Text style={styles.footerSummaryAmount}>Rs. {totalAmount}</Text>
+          </View>
 
           {/* CLOSE */}
 
@@ -591,5 +671,60 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     padding: 20,
+  },
+
+  qtyButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#000",
+
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  qtyButtonText: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+
+  qtyInput: {
+    width: 70,
+    height: 40,
+
+    borderWidth: 1,
+    borderColor: "#ccc",
+
+    borderRadius: 8,
+
+    textAlign: "center",
+
+    fontSize: 16,
+    fontWeight: "bold",
+
+    paddingVertical: 0,
+  },
+
+  footerSummary: {
+    borderTopWidth: 1,
+    borderColor: "#ddd",
+
+    paddingVertical: 15,
+
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  footerSummaryText: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+
+  footerSummaryAmount: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "green",
   },
 });

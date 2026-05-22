@@ -6,7 +6,9 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -90,48 +92,59 @@ export default function CreateOrderModal({
     );
   }, [allProducts, productSearch]);
 
-  // ADD PRODUCT TO ORDER
-
-  const addToOrder = (product: any) => {
-    const alreadyExists = selectedProducts.find(
+  const changeProductQuantity = (product: any, change: number) => {
+    const existingIndex = selectedProducts.findIndex(
       (item) => item.product === product._id,
     );
 
-    if (alreadyExists) {
-      return Alert.alert("Already Added", "Product already added");
+    if (existingIndex === -1) {
+      if (change <= 0) return;
+
+      setSelectedProducts((prev) => [
+        ...prev,
+        {
+          product: product._id,
+          productName: product.productName,
+          uom: product.uom,
+          rate: product.rate,
+          quantity: "1",
+        },
+      ]);
+
+      return;
     }
 
-    setSelectedProducts([
-      ...selectedProducts,
-      {
-        product: product._id,
-        productName: product.productName,
-        uom: product.uom,
-        rate: product.rate,
-        quantity: "1",
-      },
-    ]);
-  };
-
-  // UPDATE QUANTITY
-
-  const updateQuantity = (index: number, quantity: string) => {
     const updated = [...selectedProducts];
 
-    updated[index].quantity = quantity;
+    const currentQty = Number(updated[existingIndex].quantity || 0);
+
+    const newQty = currentQty + change;
+
+    if (newQty <= 0) {
+      updated.splice(existingIndex, 1);
+
+      setSelectedProducts(updated);
+
+      return;
+    }
+
+    updated[existingIndex].quantity = String(newQty);
 
     setSelectedProducts(updated);
   };
 
-  // REMOVE PRODUCT
+  // Helper
 
-  const removeProduct = (index: number) => {
-    const updated = [...selectedProducts];
+  const getProductQuantity = (productId: string) => {
+    const item = selectedProducts.find((p) => p.product === productId);
 
-    updated.splice(index, 1);
-
-    setSelectedProducts(updated);
+    return Number(item?.quantity || 0);
   };
+
+  const totalItems = selectedProducts.reduce(
+    (sum, item) => sum + Number(item.quantity),
+    0,
+  );
 
   const resetForm = () => {
     setCustomerName("");
@@ -227,206 +240,279 @@ export default function CreateOrderModal({
   return (
     <>
       <Modal visible={visible} animationType="slide">
-        <ScrollView style={styles.container}>
-          {/* CUSTOMER DETAILS */}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <ScrollView style={styles.container}>
+            {/* CUSTOMER DETAILS */}
 
-          <Text style={styles.heading}>Book Order</Text>
+            <Text style={styles.heading}>Book Order</Text>
 
-          <TextInput
-            placeholder="Customer Name"
-            style={styles.input}
-            value={customerName}
-            onChangeText={setCustomerName}
-          />
+            <TextInput
+              placeholder="Customer Name"
+              style={styles.input}
+              value={customerName}
+              onChangeText={setCustomerName}
+            />
 
-          <TextInput
-            placeholder="Address"
-            style={styles.input}
-            value={address}
-            onChangeText={setAddress}
-          />
+            <TextInput
+              placeholder="Address"
+              style={styles.input}
+              value={address}
+              onChangeText={setAddress}
+            />
 
-          <TextInput
-            placeholder="Phone"
-            style={styles.input}
-            keyboardType="phone-pad"
-            value={phone}
-            onChangeText={setPhone}
-          />
+            <TextInput
+              placeholder="Phone"
+              style={styles.input}
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={setPhone}
+            />
 
-          {/* SELLER */}
+            {/* SELLER */}
 
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={seller}
-              onValueChange={(itemValue) => setSeller(itemValue)}
-            >
-              <Picker.Item label="Select Seller" value="" />
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={seller}
+                onValueChange={(itemValue) => setSeller(itemValue)}
+              >
+                <Picker.Item label="Select Seller" value="" />
 
-              {sellers.map((item) => (
-                <Picker.Item
-                  key={item._id}
-                  label={item.fullName}
-                  value={item.fullName}
-                />
-              ))}
-            </Picker>
-          </View>
-
-          {/* PRODUCT SEARCH */}
-
-          <Text style={styles.heading}>Products</Text>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => setProductModalVisible(true)}
-          >
-            <Text style={styles.buttonText}>+ Add Product</Text>
-          </TouchableOpacity>
-
-          {/* SELECTED PRODUCTS */}
-
-          {selectedProducts.length > 0 && (
-            <>
-              <Text style={styles.heading}>Selected Products</Text>
-
-              {selectedProducts.map((item, index) => (
-                <View key={index} style={styles.selectedProductCard}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.productName}>{item.productName}</Text>
-
-                    <Text>Rate: Rs. {item.rate}</Text>
-                    {user.designation === "producer" || user.designation === "controller" && <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Rate</Text>
-
-                      <TextInput
-                        style={styles.input}
-                        keyboardType="numeric"
-                        value={String(item.rate || "")}
-                        onChangeText={(text) => {
-                          const updatedProducts = [...selectedProducts];
-
-                          updatedProducts[index].rate = Number(text) || 0;
-
-                          setSelectedProducts(updatedProducts);
-                        }}
-                        placeholder="Enter Rate"
-                      />
-                    </View>}
-                  </View>
-
-                  <TextInput
-                    value={item.quantity}
-                    onChangeText={(value) => updateQuantity(index, value)}
-                    keyboardType="numeric"
-                    style={styles.quantityInput}
+                {sellers.map((item) => (
+                  <Picker.Item
+                    key={item._id}
+                    label={item.fullName}
+                    value={item.fullName}
                   />
+                ))}
+              </Picker>
+            </View>
 
-                  <TouchableOpacity
-                    style={styles.removeButton}
-                    onPress={() => removeProduct(index)}
-                  >
-                    <Text style={styles.buttonText}>X</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
+            {/* PRODUCT SEARCH */}
 
-              {/* TOTAL */}
-
-              <View style={styles.totalContainer}>
-                <Text style={styles.totalText}>Total Amount</Text>
-
-                <Text style={styles.totalAmount}>Rs. {totalAmount}</Text>
-              </View>
-            </>
-          )}
-
-          {/* SUBMIT */}
-
-          <View style={styles.actionContainer}>
-            {/* SUBMIT BUTTON */}
+            <Text style={styles.heading}>Products</Text>
 
             <TouchableOpacity
-              style={[
-                styles.button,
-                styles.submitButton,
-                submitting && {
-                  opacity: 0.7,
-                },
-              ]}
-              onPress={submitOrder}
-              disabled={submitting}
+              style={styles.button}
+              onPress={() => setProductModalVisible(true)}
             >
-              {submitting ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Submit Order</Text>
-              )}
+              <Text style={styles.buttonText}>+ Add Product</Text>
             </TouchableOpacity>
 
-            {/* RESET BUTTON */}
+            {/* SELECTED PRODUCTS */}
 
-            <TouchableOpacity style={styles.resetButton} onPress={resetForm}>
-              <Text style={styles.buttonText}>Reset</Text>
-            </TouchableOpacity>
-          </View>
+            {selectedProducts.length > 0 && (
+              <View
+                style={{
+                  backgroundColor: "#f5f5f5",
+                  padding: 15,
+                  borderRadius: 12,
+                  marginBottom: 15,
+                }}
+              >
+                <Text
+                  style={{
+                    fontWeight: "bold",
+                    fontSize: 18,
+                  }}
+                >
+                  Products Selected: {totalItems}
+                </Text>
 
-          <View style={{ height: 40 }} />
-          <Modal visible={productModalVisible} animationType="slide">
-            <View style={styles.modalContainer}>
-              <Text style={styles.heading}>Select Product</Text>
+                <Text
+                  style={{
+                    marginTop: 5,
+                    fontSize: 18,
+                    color: "green",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Total Amount: Rs. {totalAmount}
+                </Text>
+              </View>
+            )}
 
-              {/* SEARCH */}
+            {/* SUBMIT */}
 
-              <TextInput
-                placeholder="Search Product"
-                style={styles.input}
-                value={productSearch}
-                onChangeText={setProductSearch}
-              />
-
-              {/* PRODUCTS */}
-
-              <FlatList
-                data={filteredProducts}
-                keyExtractor={(item) => item._id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.productCard}
-                    onPress={() => {
-                      addToOrder(item);
-
-                      setProductModalVisible(false);
-                    }}
-                  >
-                    <View>
-                      <Text style={styles.productName}>{item.productName}</Text>
-
-                      <Text style={styles.productInfo}>UOM: {item.uom}</Text>
-
-                      <Text style={styles.productInfo}>
-                        Rate: Rs. {item.rate}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
-              />
-
-              {/* CLOSE */}
+            <View style={styles.actionContainer}>
+              {/* SUBMIT BUTTON */}
 
               <TouchableOpacity
-                style={styles.secondaryButton}
-                onPress={() => setProductModalVisible(false)}
+                style={[
+                  styles.button,
+                  styles.submitButton,
+                  submitting && {
+                    opacity: 0.7,
+                  },
+                ]}
+                onPress={submitOrder}
+                disabled={submitting}
               >
-                <Text style={styles.buttonText}>Close</Text>
+                {submitting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Submit Order</Text>
+                )}
+              </TouchableOpacity>
+
+              {/* RESET BUTTON */}
+
+              <TouchableOpacity style={styles.resetButton} onPress={resetForm}>
+                <Text style={styles.buttonText}>Reset</Text>
               </TouchableOpacity>
             </View>
-          </Modal>
 
-          <TouchableOpacity style={styles.secondaryButton} onPress={onClose}>
-            <Text style={styles.buttonText}>Close</Text>
-          </TouchableOpacity>
-        </ScrollView>
+            <View style={{ height: 40 }} />
+            <Modal visible={productModalVisible} animationType="slide">
+              <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+              >
+                <View style={styles.modalContainer}>
+                  <Text style={styles.heading}>Select Products</Text>
+
+                  <TextInput
+                    placeholder="Search Product"
+                    style={styles.input}
+                    value={productSearch}
+                    onChangeText={setProductSearch}
+                  />
+
+                  <FlatList
+                    data={filteredProducts}
+                    keyboardShouldPersistTaps="handled"
+                    keyExtractor={(item) => item._id}
+                    contentContainerStyle={{
+                      paddingBottom: 120,
+                    }}
+                    renderItem={({ item }) => {
+                      const qty = getProductQuantity(item._id);
+
+                      return (
+                        <View style={styles.productCard}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.productName}>
+                              {item.productName}
+                            </Text>
+
+                            <Text style={styles.productInfo}>
+                              UOM: {item.uom}
+                            </Text>
+
+                            <Text style={styles.productInfo}>
+                              Rate: Rs. {item.rate}
+                            </Text>
+                          </View>
+
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            <TouchableOpacity
+                              style={styles.qtyButton}
+                              onPress={() => changeProductQuantity(item, -1)}
+                            >
+                              <Text style={styles.qtyButtonText}>-</Text>
+                            </TouchableOpacity>
+
+                            <TextInput
+                              value={String(qty)}
+                              keyboardType="numeric"
+                              style={styles.qtyInput}
+                              onChangeText={(text) => {
+                                const numericValue = text.replace(
+                                  /[^0-9]/g,
+                                  "",
+                                );
+
+                                setSelectedProducts((prev) => {
+                                  const updated = [...prev];
+
+                                  const existingIndex = updated.findIndex(
+                                    (p) => p.product === item._id,
+                                  );
+
+                                  // if quantity entered for non-selected product
+                                  if (existingIndex === -1) {
+                                    if (
+                                      !numericValue ||
+                                      Number(numericValue) <= 0
+                                    ) {
+                                      return prev;
+                                    }
+
+                                    return [
+                                      ...prev,
+                                      {
+                                        product: item._id,
+                                        productName: item.productName,
+                                        uom: item.uom,
+                                        rate: item.rate,
+                                        quantity: numericValue,
+                                      },
+                                    ];
+                                  }
+
+                                  // remove product if qty becomes 0
+                                  if (
+                                    numericValue === "" ||
+                                    Number(numericValue) === 0
+                                  ) {
+                                    updated.splice(existingIndex, 1);
+
+                                    return updated;
+                                  }
+
+                                  updated[existingIndex].quantity =
+                                    numericValue;
+
+                                  return updated;
+                                });
+                              }}
+                            />
+
+                            <TouchableOpacity
+                              style={styles.qtyButton}
+                              onPress={() => changeProductQuantity(item, 1)}
+                            >
+                              <Text style={styles.qtyButtonText}>+</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      );
+                    }}
+                  />
+
+                  <View style={styles.footerSummary}>
+                    <Text style={styles.footerSummaryText}>
+                      Items: {totalItems}
+                    </Text>
+
+                    <Text style={styles.footerSummaryAmount}>
+                      Rs. {totalAmount}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => setProductModalVisible(false)}
+                  >
+                    <Text style={styles.buttonText}>Done</Text>
+                  </TouchableOpacity>
+                </View>
+              </KeyboardAvoidingView>
+            </Modal>
+
+            <TouchableOpacity style={styles.secondaryButton} onPress={onClose}>
+              <Text style={styles.buttonText}>Close</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </>
   );
@@ -621,5 +707,55 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#374151",
     marginBottom: 6,
+  },
+
+  qtyButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#000",
+
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  qtyButtonText: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+
+  footerSummary: {
+    borderTopWidth: 1,
+    borderColor: "#ddd",
+
+    paddingVertical: 15,
+
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  footerSummaryText: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+
+  footerSummaryAmount: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "green",
+  },
+
+  qtyInput: {
+    width: 70,
+    height: 40,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    textAlign: "center",
+    fontSize: 16,
+    fontWeight: "bold",
+    paddingVertical: 0,
   },
 });

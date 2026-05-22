@@ -8,7 +8,9 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -105,7 +107,7 @@ export default function OrderDetailsScreen() {
       // PRODUCTS
 
       const formattedProducts = order.detail.map((item: any) => ({
-        product: item.productId,
+        product: String(item.productId),
         productName: item.productName,
         quantity: String(item.quantity),
         rate: item.rate || 0,
@@ -146,46 +148,59 @@ export default function OrderDetailsScreen() {
 
   // ADD PRODUCT
 
-  const addProduct = (product: any) => {
-    const alreadyExists = selectedProducts.find(
-      (item) => item.product === product._id,
+  const changeProductQuantity = (product: any, change: number) => {
+    const existingIndex = selectedProducts.findIndex(
+      (item) => String(item.product) === String(product._id),
     );
 
-    if (alreadyExists) {
-      return Alert.alert("Already Added", "Product already exists");
+    if (existingIndex === -1) {
+      if (change <= 0) return;
+
+      setSelectedProducts((prev) => [
+        ...prev,
+        {
+          product: String(product._id),
+          productName: product.productName,
+          quantity: "1",
+          rate: product.rate,
+          uom: product.uom || "",
+        },
+      ]);
+
+      return;
     }
 
-    setSelectedProducts([
-      ...selectedProducts,
-      {
-        product: product._id,
-        productName: product.productName,
-        quantity: "1",
-        rate: product.rate,
-        uom: product.uom || "",
-      },
-    ]);
-  };
-
-  // REMOVE PRODUCT
-
-  const removeProduct = (index: number) => {
     const updated = [...selectedProducts];
 
-    updated.splice(index, 1);
+    const currentQty = Number(updated[existingIndex].quantity || 0);
+
+    const newQty = currentQty + change;
+
+    if (newQty <= 0) {
+      updated.splice(existingIndex, 1);
+
+      setSelectedProducts(updated);
+
+      return;
+    }
+
+    updated[existingIndex].quantity = String(newQty);
 
     setSelectedProducts(updated);
   };
 
-  // UPDATE QUANTITY
+  const getProductQuantity = (productId: string) => {
+    const item = selectedProducts.find(
+      (p) => String(p.product) === String(productId),
+    );
 
-  const updateQuantity = (index: number, value: string) => {
-    const updated = [...selectedProducts];
-
-    updated[index].quantity = value;
-
-    setSelectedProducts(updated);
+    return Number(item?.quantity || 0);
   };
+
+  const totalItems = selectedProducts.reduce(
+    (sum, item) => sum + Number(item.quantity),
+    0,
+  );
 
   // TOTAL
 
@@ -237,7 +252,6 @@ export default function OrderDetailsScreen() {
 
       router.back();
     } catch (error: any) {
-
       Alert.alert("Error", "Failed to update order");
     } finally {
       setUpdating(false);
@@ -255,200 +269,323 @@ export default function OrderDetailsScreen() {
   return (
     <View style={styles.container}>
       <AppHeader title="Order Details" />
-
-      <ScrollView
-        contentContainerStyle={{
-          paddingBottom: 50,
-        }}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        {/* CUSTOMER */}
+        <ScrollView
+          contentContainerStyle={{
+            paddingBottom: 50,
+          }}
+        >
+          {/* CUSTOMER */}
 
-        <View style={styles.content}>
-          <Text style={styles.label}>Customer Name</Text>
+          <View style={styles.content}>
+            <Text style={styles.label}>Customer Name</Text>
 
-          <TextInput
-            value={customerName}
-            onChangeText={setCustomerName}
-            style={styles.input}
-            placeholder="Customer Name"
-          />
+            <TextInput
+              value={customerName}
+              onChangeText={setCustomerName}
+              style={styles.input}
+              placeholder="Customer Name"
+            />
 
-          {/* ADDRESS */}
+            {/* ADDRESS */}
 
-          <Text style={styles.label}>Address</Text>
+            <Text style={styles.label}>Address</Text>
 
-          <TextInput
-            value={address}
-            onChangeText={setAddress}
-            style={styles.input}
-            placeholder="Address"
-          />
+            <TextInput
+              value={address}
+              onChangeText={setAddress}
+              style={styles.input}
+              placeholder="Address"
+            />
 
-          {/* PHONE */}
+            {/* PHONE */}
 
-          <Text style={styles.label}>Phone</Text>
+            <Text style={styles.label}>Phone</Text>
 
-          <TextInput
-            value={phone}
-            onChangeText={setPhone}
-            style={styles.input}
-            keyboardType="phone-pad"
-            placeholder="Phone"
-          />
+            <TextInput
+              value={phone}
+              onChangeText={setPhone}
+              style={styles.input}
+              keyboardType="phone-pad"
+              placeholder="Phone"
+            />
 
-          {/* SELLER */}
+            {/* SELLER */}
 
-          <Text style={styles.label}>Seller</Text>
+            <Text style={styles.label}>Seller</Text>
 
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={seller}
-              onValueChange={(value) => setSeller(value)}
-            >
-              <Picker.Item label="Select Seller" value="" />
-
-              {sellers.map((item) => (
-                <Picker.Item
-                  key={item._id}
-                  label={item.fullName}
-                  value={item.fullName}
-                />
-              ))}
-            </Picker>
-          </View>
-
-          <Text style={styles.label}>Products</Text>
-
-          <TouchableOpacity
-            style={styles.addProductButton}
-            onPress={() => setProductModalVisible(true)}
-          >
-            <Text style={styles.buttonText}>+ Add Product</Text>
-          </TouchableOpacity>
-
-          {/* SELECTED PRODUCTS */}
-
-          <Text style={styles.heading}>Selected Products</Text>
-
-          {selectedProducts.map((item, index) => (
-            <View key={index} style={styles.selectedProductCard}>
-              <View
-                style={{
-                  flex: 1,
-                }}
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={seller}
+                onValueChange={(value) => setSeller(value)}
               >
-                <Text style={styles.productName}>{item.productName}</Text>
+                <Picker.Item label="Select Seller" value="" />
 
-                <Text>Rs. {item.rate}</Text>
-                {user.designation === "producer" ||
-                  (user.designation === "controller" && (
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Rate</Text>
+                {sellers.map((item) => (
+                  <Picker.Item
+                    key={item._id}
+                    label={item.fullName}
+                    value={item.fullName}
+                  />
+                ))}
+              </Picker>
+            </View>
+
+            <Text style={styles.label}>Products</Text>
+
+            <TouchableOpacity
+              style={styles.addProductButton}
+              onPress={() => setProductModalVisible(true)}
+            >
+              <Text style={styles.buttonText}>+ Add Product</Text>
+            </TouchableOpacity>
+
+            {/* SELECTED PRODUCTS */}
+
+            {(user?.designation === "producer" ||
+              user?.designation === "controller") && (
+              <>
+                <Text style={styles.heading}>Selected Products</Text>
+
+                {selectedProducts.map((item, index) => (
+                  <View key={index} style={styles.selectedProductCard}>
+                    <View
+                      style={{
+                        flex: 1,
+                      }}
+                    >
+                      <Text style={styles.productName}>{item.productName}</Text>
+
+                      <Text>Rs. {item.rate}</Text>
+
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Rate</Text>
+
+                        <TextInput
+                          style={styles.input}
+                          keyboardType="numeric"
+                          value={String(item.rate || "")}
+                          onChangeText={(text) => {
+                            const updatedProducts = [...selectedProducts];
+
+                            updatedProducts[index].rate = Number(text) || 0;
+
+                            setSelectedProducts(updatedProducts);
+                          }}
+                          placeholder="Enter Rate"
+                        />
+                      </View>
+                    </View>
+
+                    <View style={styles.quantityContainer}>
+                      <TouchableOpacity
+                        style={styles.qtyButton}
+                        onPress={() => {
+                          const updated = [...selectedProducts];
+
+                          const currentQty = Number(
+                            updated[index].quantity || 0,
+                          );
+
+                          if (currentQty > 1) {
+                            updated[index].quantity = String(currentQty - 1);
+
+                            setSelectedProducts(updated);
+                          }
+                        }}
+                      >
+                        <Text style={styles.qtyButtonText}>-</Text>
+                      </TouchableOpacity>
 
                       <TextInput
-                        style={styles.input}
+                        value={String(item.quantity)}
                         keyboardType="numeric"
-                        value={String(item.rate || "")}
+                        style={styles.qtyInput}
                         onChangeText={(text) => {
-                          const updatedProducts = [...selectedProducts];
+                          const updated = [...selectedProducts];
 
-                          updatedProducts[index].rate = Number(text) || 0;
+                          updated[index].quantity = text.replace(/[^0-9]/g, "");
 
-                          setSelectedProducts(updatedProducts);
+                          setSelectedProducts(updated);
                         }}
-                        placeholder="Enter Rate"
                       />
+
+                      <TouchableOpacity
+                        style={styles.qtyButton}
+                        onPress={() => {
+                          const updated = [...selectedProducts];
+
+                          const currentQty = Number(
+                            updated[index].quantity || 0,
+                          );
+
+                          updated[index].quantity = String(currentQty + 1);
+
+                          setSelectedProducts(updated);
+                        }}
+                      >
+                        <Text style={styles.qtyButtonText}>+</Text>
+                      </TouchableOpacity>
                     </View>
-                  ))}
-              </View>
-
-              <TextInput
-                value={item.quantity}
-                onChangeText={(value) => updateQuantity(index, value)}
-                keyboardType="numeric"
-                style={styles.quantityInput}
-              />
-
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => removeProduct(index)}
-              >
-                <Text style={styles.removeText}>X</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-
-          {/* TOTAL */}
-
-          <View style={styles.totalContainer}>
-            <Text style={styles.totalText}>Total</Text>
-
-            <Text style={styles.totalAmount}>Rs. {totalAmount}</Text>
-          </View>
-
-          {/* UPDATE BUTTON */}
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={updateOrder}
-            disabled={updating}
-          >
-            {updating ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Save Changes</Text>
+                  </View>
+                ))}
+              </>
             )}
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+
+            {/* TOTAL */}
+
+            <View style={styles.totalContainer}>
+              <Text style={styles.totalText}>Total</Text>
+
+              <Text style={styles.totalAmount}>Rs. {totalAmount}</Text>
+            </View>
+
+            {/* UPDATE BUTTON */}
+
+            <TouchableOpacity
+              style={styles.button}
+              onPress={updateOrder}
+              disabled={updating}
+            >
+              {updating ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Save Changes</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <Modal visible={productModalVisible} animationType="slide">
-        <View style={styles.modalContainer}>
-          <Text style={styles.heading}>Select Product</Text>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <View style={styles.modalContainer}>
+            <Text style={styles.heading}>Select Product</Text>
 
-          {/* SEARCH */}
+            {/* SEARCH */}
 
-          <TextInput
-            placeholder="Search Product"
-            style={styles.input}
-            value={productSearch}
-            onChangeText={setProductSearch}
-          />
+            <TextInput
+              placeholder="Search Product"
+              style={styles.input}
+              value={productSearch}
+              onChangeText={setProductSearch}
+            />
 
-          {/* PRODUCTS */}
+            {/* PRODUCTS */}
 
-          <FlatList
-            data={filteredProducts}
-            keyExtractor={(item) => item._id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.productCard}
-                onPress={() => {
-                  addProduct(item);
+            <FlatList
+              data={filteredProducts}
+              keyboardShouldPersistTaps="handled"
+              keyExtractor={(item) => item._id}
+              contentContainerStyle={{
+                paddingBottom: 120,
+              }}
+              renderItem={({ item }) => {
+                const qty = getProductQuantity(item._id);
 
-                  setProductModalVisible(false);
-                }}
-              >
-                <View>
-                  <Text style={styles.productName}>{item.productName}</Text>
+                return (
+                  <View style={styles.productCard}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.productName}>{item.productName}</Text>
 
-                  <Text>Rs. {item.rate}</Text>
-                </View>
+                      <Text>Rs. {item.rate}</Text>
+                    </View>
 
-                <Text style={styles.addText}>Add</Text>
-              </TouchableOpacity>
-            )}
-          />
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <TouchableOpacity
+                        style={styles.qtyButton}
+                        onPress={() => changeProductQuantity(item, -1)}
+                      >
+                        <Text style={styles.qtyButtonText}>-</Text>
+                      </TouchableOpacity>
 
-          {/* CLOSE */}
+                      <TextInput
+                        value={String(qty)}
+                        keyboardType="numeric"
+                        style={styles.qtyInput}
+                        onChangeText={(text) => {
+                          const numericValue = text.replace(/[^0-9]/g, "");
 
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setProductModalVisible(false)}
-          >
-            <Text style={styles.buttonText}>Close</Text>
-          </TouchableOpacity>
-        </View>
+                          setSelectedProducts((prev) => {
+                            const updated = [...prev];
+
+                            const existingIndex = updated.findIndex(
+                              (p) => p.product === item._id,
+                            );
+
+                            if (existingIndex === -1) {
+                              if (!numericValue || Number(numericValue) <= 0) {
+                                return prev;
+                              }
+
+                              return [
+                                ...prev,
+                                {
+                                  product: item._id,
+                                  productName: item.productName,
+                                  quantity: numericValue,
+                                  rate: item.rate,
+                                  uom: item.uom || "",
+                                },
+                              ];
+                            }
+
+                            if (
+                              numericValue === "" ||
+                              Number(numericValue) === 0
+                            ) {
+                              updated.splice(existingIndex, 1);
+
+                              return updated;
+                            }
+
+                            updated[existingIndex].quantity = numericValue;
+
+                            return updated;
+                          });
+                        }}
+                      />
+
+                      <TouchableOpacity
+                        style={styles.qtyButton}
+                        onPress={() => changeProductQuantity(item, 1)}
+                      >
+                        <Text style={styles.qtyButtonText}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              }}
+            />
+
+            <View style={styles.footerSummary}>
+              <Text style={styles.footerSummaryText}>Items: {totalItems}</Text>
+
+              <Text style={styles.footerSummaryAmount}>Rs. {totalAmount}</Text>
+            </View>
+
+            {/* CLOSE */}
+
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setProductModalVisible(false)}
+            >
+              <Text style={styles.buttonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -641,5 +778,97 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#374151",
     marginBottom: 6,
+  },
+
+  // qtyButton: {
+  //   width: 36,
+  //   height: 36,
+  //   borderRadius: 18,
+  //   backgroundColor: "#007bff",
+
+  //   justifyContent: "center",
+  //   alignItems: "center",
+  // },
+
+  // qtyButtonText: {
+  //   color: "#fff",
+  //   fontSize: 20,
+  //   fontWeight: "bold",
+  // },
+
+  // qtyInput: {
+  //   width: 70,
+  //   height: 40,
+
+  //   borderWidth: 1,
+  //   borderColor: "#ccc",
+
+  //   borderRadius: 8,
+
+  //   textAlign: "center",
+
+  //   fontSize: 16,
+  //   fontWeight: "bold",
+
+  //   paddingVertical: 0,
+  // },
+
+  footerSummary: {
+    borderTopWidth: 1,
+    borderColor: "#ddd",
+
+    paddingVertical: 15,
+
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  footerSummaryText: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+
+  footerSummaryAmount: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "green",
+  },
+
+  quantityContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+    gap: 8,
+  },
+
+  qtyButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#007bff",
+
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  qtyButtonText: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+
+  qtyInput: {
+    width: 70,
+    height: 40,
+
+    borderWidth: 1,
+    borderColor: "#ccc",
+
+    borderRadius: 8,
+
+    textAlign: "center",
+
+    fontWeight: "bold",
   },
 });

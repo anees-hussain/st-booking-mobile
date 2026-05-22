@@ -115,7 +115,6 @@ export default function OrdersListScreen() {
         setUser(JSON.parse(storedUser));
       }
 
-      console.log("Logged in user:", JSON.parse(storedUser || "{}"));
     } catch (error) {
       console.log(error);
     }
@@ -306,8 +305,6 @@ export default function OrdersListScreen() {
                 `/orders/${order._id}/status`,
                 body,
               );
-
-              console.log("Updated Order:", response.data);
 
               //
               // SUCCESS MESSAGE
