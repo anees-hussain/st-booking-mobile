@@ -192,31 +192,40 @@ export default function OrderCard({
   // `;
   // };
 
-const centerText = (text: string, width = 32) => {
-  const spaces = Math.max(0, Math.floor((width - text.length) / 2));
+const PRINTER_WIDTH = 32;
 
-  return " ".repeat(spaces) + text;
+const centerText = (text: string) => {
+  const space = Math.max(0, Math.floor((PRINTER_WIDTH - text.length) / 2));
+
+  return " ".repeat(space) + text;
 };
 
 const line = (char = "-") => {
-  return char.repeat(32);
+  return char.repeat(PRINTER_WIDTH);
 };
 
-const row = (left: string, right: string, width = 32) => {
-  const spaces = Math.max(1, width - left.length - right.length);
+const formatText = (text: string, max = 32) => {
+  if (!text) return "";
 
-  return left + " ".repeat(spaces) + right;
+  // remove unsupported unicode chars
+  const cleaned = text.replace(/[^\x20-\x7E]/g, "");
+
+  if (cleaned.length <= max) {
+    return cleaned;
+  }
+
+  return cleaned.substring(0, max - 3) + "...";
 };
 
 const productRow = (name: string, qty: number, rate: number, total: number) => {
-  const shortName = name.length > 14 ? name.substring(0, 14) : name;
+  const shortName = formatText(name, 14);
 
-  return `
-${shortName.padEnd(14)}
-${String(qty).padStart(3)}
-${String(rate).padStart(7)}
-${String(total).padStart(8)}
-`;
+  return (
+    shortName.padEnd(14) +
+    String(qty).padStart(4) +
+    String(rate).padStart(7) +
+    String(total).padStart(7)
+  );
 };
 
 const generateInvoiceText = (order: any) => {
@@ -232,32 +241,34 @@ const generateInvoiceText = (order: any) => {
     .join("\n");
 
   return `
-
-${line("=")}
 ${centerText("SHOAIB TRADERS")}
 ${centerText("Customer Invoice")}
+
 ${line("=")}
 
-Name: ${order.customerName || ""}
-Phone: ${order.phone || ""}
-Address: ${order.address || ""}
+Name:
+${formatText(order.customerName || "", 30)}
+
+Phone:
+${formatText(order.phone || "", 30)}
+
+Address:
+${formatText(order.address || "", 30)}
 
 ${line("-")}
 
-Item            Qty   Rate   Total
+Item           Qty   Rate  Total
 
 ${products}
 
 ${line("-")}
 
-${row("Total:", `Rs. ${order.totalAmount || 0}`)}
+${centerText(`TOTAL: Rs. ${order.totalAmount || 0}`)}
 
 ${line("-")}
 
 ${centerText("Thank You")}
-
 ${centerText("0308-7387998")}
-
 
 
 
