@@ -1,5 +1,3 @@
-// screens/products/ProductManagementScreen.tsx
-
 import React, { useEffect, useState } from "react";
 
 import {
