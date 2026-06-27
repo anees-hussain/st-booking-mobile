@@ -108,7 +108,7 @@ ${centerText(`TOTAL: Rs. ${order.totalAmount || 0}`)}
 ${line("-")}
 
 ${centerText("Thank You")}
-${centerText("0308-7387998")}
+${centerText("0303-2075886")}
 
 
 

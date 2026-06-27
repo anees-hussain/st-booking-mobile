@@ -220,7 +220,7 @@ export default function HomeScreen() {
   };
 
   const handleContactUs = () => {
-    Linking.openURL("tel:+923006838039");
+    Linking.openURL("tel:+923032075886");
   };
 
   return (
