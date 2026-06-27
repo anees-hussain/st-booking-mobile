@@ -49,6 +49,8 @@ export default function OrdersListScreen() {
 
   const [sellers, setSellers] = useState<any[]>([]);
 
+  const [deliveryMen, setDeliveryMen] = useState<any[]>([]);
+
   const [selectedDate, setSelectedDate] = useState("");
 
   const [selectedDeliveryBy, setSelectedDeliveryBy] = useState("");
@@ -65,7 +67,7 @@ export default function OrdersListScreen() {
 
   const [deliveryBy, setDeliveryBy] = useState("");
 
-  const deliveryOptions = ["asad", "hamza"];
+  const deliveryOptions = deliveryMen.map((item) => item.fullName);
 
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
@@ -89,6 +91,7 @@ export default function OrdersListScreen() {
     setupLoggedInUser();
 
     fetchSellers();
+    fetchDeliverymen();
   }, []);
 
   useEffect(() => {
@@ -107,6 +110,16 @@ export default function OrdersListScreen() {
     }
   };
 
+  const fetchDeliverymen = async () => {
+    try {
+      const response = await API.get("/users/delivery-men");
+
+      setDeliveryMen(response.data || []);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const setupLoggedInUser = async () => {
     try {
       const storedUser = await AsyncStorage.getItem("user");
@@ -114,7 +127,6 @@ export default function OrdersListScreen() {
       if (storedUser) {
         setUser(JSON.parse(storedUser));
       }
-
     } catch (error) {
       console.log(error);
     }
@@ -209,7 +221,7 @@ export default function OrdersListScreen() {
       setLoadingMore(false);
     }
   };
-  
+
   const handleRefresh = async () => {
     try {
       setRefreshing(true);
