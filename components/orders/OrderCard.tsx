@@ -20,6 +20,7 @@ interface Props {
   onUpdate: () => void;
   onDeliver?: () => void;
   onCancel?: () => void;
+  onCredit?: () => void;
   user: any;
   onPayment?: () => void;
 }
@@ -30,6 +31,7 @@ export default function OrderCard({
   onUpdate,
   onDeliver,
   onCancel,
+  onCredit,
   onPayment,
 }: Props) {
   const [modalVisible, setModalVisible] = useState(false);
@@ -262,7 +264,7 @@ ${centerText("0303-2075886")}
           {order.status === "cancelled" && (
             <>
               <TouchableOpacity
-                style={styles.cancelButton}
+                style={[styles.cancelButton, styles.actionButton]}
                 onPress={onCancel}
                 disabled
               >
@@ -276,20 +278,26 @@ ${centerText("0303-2075886")}
           {order.status === "delivered" && (
             <>
               <TouchableOpacity
-                style={styles.deliverButton}
+                style={[styles.deliverButton, styles.actionButton]}
                 onPress={onDeliver}
                 disabled
               >
                 <Text style={styles.buttonText}>Delivered</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
+              <TouchableOpacity
+                style={[styles.cancelButton, styles.actionButton]}
+                onPress={onCancel}
+              >
                 <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>
 
               {user.designation === "manager" ||
               user.designation === "controller" ? (
-                <TouchableOpacity style={styles.paidButton} onPress={onPayment}>
+                <TouchableOpacity
+                  style={[styles.paidButton, styles.actionButton]}
+                  onPress={onPayment}
+                >
                   <Text style={styles.buttonText}>Paid</Text>
                 </TouchableOpacity>
               ) : null}
@@ -300,18 +308,50 @@ ${centerText("0303-2075886")}
 
           {order.status === "submitted" && (
             <>
-              <TouchableOpacity style={styles.updateButton} onPress={onUpdate}>
+              <TouchableOpacity
+                style={[styles.updateButton, styles.actionButton]}
+                onPress={onUpdate}
+              >
                 <Text style={styles.buttonText}>Update</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.cancelButton, styles.actionButton]}
+                onPress={onCancel}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.deliverButton}
+                style={[styles.deliverButton, styles.actionButton]}
                 onPress={onDeliver}
               >
                 <Text style={styles.buttonText}>Delivered</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
+
+              <TouchableOpacity
+                style={[styles.creditButton, styles.actionButton]}
+                onPress={onCredit}
+              >
+                <Text style={styles.buttonText}>Credit</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          {order.status === "credit" && (
+            <>
+              <TouchableOpacity
+                style={[styles.deliverButton, styles.actionButton]}
+                onPress={onDeliver}
+              >
+                <Text style={styles.buttonText}>Delivered</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.cancelButton, styles.actionButton]}
+                onPress={onCancel}
+              >
                 <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>
             </>
@@ -506,72 +546,38 @@ const styles = StyleSheet.create({
 
   buttonView: {
     flexDirection: "row",
-
+    flexWrap: "wrap",
     justifyContent: "space-between",
+    marginTop: 18,
+  },
+
+  actionButton: {
+    width: "48%",
+    height: 52,
+    marginBottom: 10,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   updateButton: {
-    marginTop: 18,
-
     backgroundColor: "#2563eb",
-
-    height: 52,
-
-    width: "30%",
-
-    borderRadius: 14,
-
-    justifyContent: "center",
-
-    alignItems: "center",
   },
 
   deliverButton: {
-    marginTop: 18,
-
     backgroundColor: "#9d10b9",
-
-    height: 52,
-
-    width: "30%",
-
-    borderRadius: 14,
-
-    justifyContent: "center",
-
-    alignItems: "center",
   },
 
   cancelButton: {
-    marginTop: 18,
-
     backgroundColor: "#dc2626",
+  },
 
-    height: 52,
-
-    width: "30%",
-
-    borderRadius: 14,
-
-    justifyContent: "center",
-
-    alignItems: "center",
+  creditButton: {
+    backgroundColor: "#10b981",
   },
 
   paidButton: {
-    marginTop: 18,
-
     backgroundColor: "#10b981",
-
-    height: 52,
-
-    width: "30%",
-
-    borderRadius: 14,
-
-    justifyContent: "center",
-
-    alignItems: "center",
   },
 
   buttonText: {

@@ -213,7 +213,7 @@ export default function OrdersListScreen() {
     } catch (error) {
       console.log(
         "FETCH ORDERS ERROR:",
-        error?.response?.data || error.message,
+        error?.response?.data?.message || error.message || error,
       );
     } finally {
       setLoading(false);
@@ -411,6 +411,7 @@ export default function OrdersListScreen() {
             }}
             onCancel={() => updateOrderStatus(item, "cancelled")}
             onPayment={() => updateOrderStatus(item, "paid")}
+            onCredit={() => updateOrderStatus(item, "credit")}
           />
         )}
         ListFooterComponent={
